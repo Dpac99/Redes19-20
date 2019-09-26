@@ -7,6 +7,7 @@
 #include <netdb.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 
 #define PORT "58000"
 
@@ -23,40 +24,53 @@ int main(){
 	hints.ai_flags=AI_NUMERICSERV;
 
 
-	n=getaddrinfo("Mondego.tecnico.ulisboa.pt",PORT,&hints,&res);
-	if(n!=0)/*error*/exit(1);
+	n=getaddrinfo("194.210.157.206",PORT,&hints,&res);
+	if(n!=0){
+        printf("0");
+        exit(1);
+    }
 
 	fd=socket(res->ai_family,res->ai_socktype, res->ai_protocol);
-	if(fd==-1)/*error*/exit(1);
+	if(fd==-1){
+        printf("1");
+        exit(1);
+    }
 
 	n=connect(fd,res->ai_addr,res->ai_addrlen);
-	if(n==-1)/*error*/exit(1);
+	if(n==-1){
+        printf("Erro: %d", errno);
+        exit(1);
+    }
 
-	while (1){
+	while (!strcmp(buffer, "exit")){
 
 		scanf("%s", buffer);
 		ptr=strcpy(buffer2, buffer);
 
-		nleft = 15;
+        nwrite=write(fd, buffer, nleft);
+        if(nwrite==-1)/*error*/exit(1);
+		/*nleft = 15;
 		while(nleft >0){
 			nwrite=write(fd, buffer, nleft);
-			if(nwrite==-1)/*error*/exit(1);
+			if(nwrite==-1)/*error exit(1);
 			else if (nwrite == 0) break;
 			nleft-=nwrite;
 			ptr+=nwrite;
-		}
+		}*/
 
 		memset(buffer, 0, sizeof(char));
+        ptr = buffer;
+        nread=read(fd,ptr,nleft);
+        if(n==-1)/*error*/exit(1);
 
-		nleft=15; ptr = buffer;
-
-		while(nleft>0){
+		/*while(nleft>0){
 			nread=read(fd,ptr,nleft);
-			if(n==-1)/*error*/exit(1);
+			if(n==-1)/*error exit(1);
 			else if (nread==0)break;
 			nleft-=nread;
 			ptr+=nread;
-		}
+		}*/
+        write(1, ptr, strlen(ptr));
 		memset(buffer, 0, sizeof(char));
 	}
 
