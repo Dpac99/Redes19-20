@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#define PORT "58000"
+#define PORT "58053"
 
 int main(){
 	int fd, addrlen, /*nleft*/nread, nwrite,n, errcode, size; 
@@ -23,7 +23,7 @@ int main(){
 	hints.ai_flags=AI_NUMERICSERV;
 
 
-	n=getaddrinfo(NULL,PORT,&hints,&res);
+	n=getaddrinfo("sigma02.ist.utl.pt",PORT,&hints,&res);
 	if(n!=0){
         printf("0");
         exit(1);
