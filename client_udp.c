@@ -23,7 +23,7 @@ int main(){
 	hints.ai_flags=AI_NUMERICSERV;
 
 
-	n=getaddrinfo("194.210.157.206",PORT,&hints,&res);
+	n=getaddrinfo(NULL,PORT,&hints,&res);
 	if(n!=0){
         printf("0");
         exit(1);
@@ -79,7 +79,9 @@ int main(){
 			ptr+=nread;
 		}*/
 
-        write(1, "echo: ", nread);
+        write(1, "echo: ", 6);
+		write(1, buffer, nread);
+		write(1, "\n", 1);
 		memset(buffer, 0, sizeof(char));
 	}
 
