@@ -33,7 +33,10 @@ int main(){
     fd_set rfds;
 
     act.sa_handler=SIG_IGN;
-    if(sigaction(SIGCHLD,&act,NULL)==-1)/*error*/exit(1);
+    if(sigaction(SIGCHLD,&act,NULL)==-1){
+        printf("Error with sigaction\n");
+        exit(1);
+    }
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
@@ -41,6 +44,7 @@ int main(){
     hints.ai_flags = AI_PASSIVE | AI_NUMERICSERV;
 
     if ((errcode = getaddrinfo(NULL, PORT, &hints, &res)) != 0){
+        printf("Error with getaddrinfo\n");
         exit(1);
     }
 
@@ -52,6 +56,7 @@ int main(){
                     close(tcp_fd);
                 }
                 freeaddrinfo(i);
+                printf("Error with socket udp\n");
                 exit(1);
             }
 
@@ -61,6 +66,7 @@ int main(){
                 }
                 freeaddrinfo(i);
                 close(udp_fd);
+                printf("Error with bind udp\n");
                 exit(1);
             }
 
@@ -72,6 +78,7 @@ int main(){
                     close(udp_fd);
                 }
                 freeaddrinfo(i);
+                printf("Error with socket tcp\n");
                 exit(1);
             }
 
@@ -81,6 +88,7 @@ int main(){
                 if(tcp_fd > 0){
                     close(udp_fd);
                 }
+                printf("Error with bind tcp\n");
                 exit(1);
             }
 
@@ -89,6 +97,7 @@ int main(){
                     close(udp_fd);
                 freeaddrinfo(i);
                 close(tcp_fd);
+                printf("Error with listen tcp\n");
                 exit(1);
             }
         }
@@ -105,6 +114,7 @@ int main(){
         if (nready < 0){
             close(tcp_fd);
             close(udp_fd);
+            printf("Error with select\n");
             exit(1);
         }
 
@@ -119,14 +129,18 @@ int main(){
             if(nread == -1){
                 close(tcp_fd);
                 close(udp_fd);
+                printf("Error with recvfrom\n");
                 exit(1);
             }
 
-            nsent = sendto(udp_fd, buffer, nread, 0, (struct sockaddr*)&addr, &addrlen);
+            printf("Received: %s\n", buffer);
+
+            nsent = sendto(udp_fd, buffer, nread, 0, (struct sockaddr*)&addr, addrlen);
 
             if(nsent == -1){
                 close(tcp_fd);
                 close(udp_fd);
+                printf("Error with sendto: %d\n", errno);
                 exit(1);
             }
         }
@@ -140,12 +154,14 @@ int main(){
             if (resp_fd == -1){
                 close(tcp_fd);
                 close(udp_fd);
+                printf("Error with accept tcp\n");
                 exit(1);
             }
 
             if ((pid = fork()) == -1){
                 close(tcp_fd);
                 close(udp_fd);
+                printf("Error with fork\n");
                 exit(1);
             }
             else if (pid == 0){ //Child process
@@ -154,11 +170,20 @@ int main(){
                     if(n==-1){
                         close(resp_fd);
                         close(udp_fd);
+                        printf("Error with read\n");
                         exit(1);
                     }
+
+                    printf("Received: %s\n", buffer2);
+
                     ptr=&buffer2[0];
                     while (n>0){
-                        if((nsent=write(resp_fd,ptr,n))<=0)/*error*/exit(1);
+                        if((nsent=write(resp_fd,ptr,n))<=0){
+                            close(resp_fd);
+                            close(udp_fd);
+                            printf("Error with write\n");
+                            exit(1);
+                        }
                         n-=nsent; 
                         ptr+=nsent;
                     }
