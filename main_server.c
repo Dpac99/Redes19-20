@@ -11,7 +11,7 @@
 #include <signal.h>
 #include <errno.h>
 
-#define PORT "58000"
+#define PORT "58053"
 
 int max(int x, int y) 
 { 
@@ -120,8 +120,8 @@ int main(){
 
 
         if(FD_ISSET(udp_fd, &rfds)){
-            memset(buffer, 0, sizeof(char));
-            memset(buffer2, 0, sizeof(char));
+            memset(buffer, 0, sizeof(char)*strlen(buffer));
+            memset(buffer2, 0, sizeof(char)*strlen(buffer2));
             n, nsent, nread = 0;
             addrlen = sizeof(addr);
             nread = recvfrom(udp_fd, buffer, 128, 0, (struct sockaddr*)&addr, &addrlen);
@@ -146,8 +146,8 @@ int main(){
         }
 
         if(FD_ISSET(tcp_fd, &rfds)){
-            memset(buffer, 0, sizeof(char));
-            memset(buffer2, 0, sizeof(char));
+            memset(buffer, 0, sizeof(char)*strlen(buffer));
+            memset(buffer2, 0, sizeof(char)*strlen(buffer2));
             n, nsent, nread = 0;
             addrlen = sizeof(addr);
             resp_fd = accept(tcp_fd, (struct sockaddr*)&addr, &addrlen);
