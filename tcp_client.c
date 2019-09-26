@@ -23,7 +23,7 @@ int main(){
 	hints.ai_flags=AI_NUMERICSERV;
 
 
-	n=getaddrinfo("Mondego.tecnico.ulisboa.pt",PORT,&hints,&res);
+	n=getaddrinfo(NULL,PORT,&hints,&res);
 	if(n!=0)/*error*/exit(1);
 
 	fd=socket(res->ai_family,res->ai_socktype, res->ai_protocol);
@@ -35,28 +35,18 @@ int main(){
 	while (1){
 
 		scanf("%s", buffer);
-		ptr=strcpy(buffer2, buffer);
-
-		nleft = 15;
-		while(nleft >0){
-			nwrite=write(fd, buffer, nleft);
-			if(nwrite==-1)/*error*/exit(1);
-			else if (nwrite == 0) break;
-			nleft-=nwrite;
-			ptr+=nwrite;
-		}
+		
+		nwrite=write(fd, buffer, strlen(buffer));
+		if(nwrite==-1)/*error*/exit(1);
+	
 
 		memset(buffer, 0, sizeof(char));
 
-		nleft=15; ptr = buffer;
-
-		while(nleft>0){
-			nread=read(fd,ptr,nleft);
-			if(n==-1)/*error*/exit(1);
-			else if (nread==0)break;
-			nleft-=nread;
-			ptr+=nread;
-		}
+		nread=read(fd,buffer2,15);
+		if(n==-1)/*error*/exit(1);
+		write(1, "Received: ",10);
+		write(1, buffer2, strlen(buffer2));
+		write(1, "\n", 1);
 		memset(buffer, 0, sizeof(char));
 	}
 

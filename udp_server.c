@@ -34,8 +34,6 @@ int main(){
 
 	while (1){
 
-
-
 		n=recvfrom(fd,buffer,128,0,(struct sockaddr*)&addr,&addrlen);
 		if(n==-1)/*error*/exit(1);
 
