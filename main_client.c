@@ -21,29 +21,76 @@ int main(int argc, char *argv[]){
 
 	
 	int tcp_fd, udp_fd, addrlen;
-	char port[8], server_IP[128]; 
-	int nleft, nread, nwrite, n, errcode;
+	int nleft, nread, nwrite, n, errcode, size;
 
 	struct addrinfo hints, *res;
 	struct sockaddr_in addr;
-	char *ptr,buffer[128], buffer2[128];
+	char *ptr,buffer[128], buffer2[128], *port, *server_IP;
+
+	port = (char*)malloc(16);
+	server_IP = (char*)malloc(128);
 
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family=AF_INET;      // IPv4
-	hints.ai_socktype=SOCK_STREAM; // UDP socket
+	hints.ai_socktype=SOCK_DGRAM; // UDP socket
 	hints.ai_flags=AI_NUMERICSERV;
 
 	parseArgs(argc, argv, port, server_IP);
 
-	n=getaddrinfo("Mondego.tecnico.ulisboa.pt", port, &hints, &res);
-	if(n!=0)/*error*/exit(1);
+	if (server_IP != NULL){
+		printf("%s\n", server_IP);
+	}
+
+	n=getaddrinfo(server_IP, port, &hints, &res);
+	if(n!=0){
+        printf("0");
+        exit(1);
+    }
+
+	udp_fd=socket(res->ai_family,res->ai_socktype, res->ai_protocol);
+	if(udp_fd==-1){
+        printf("1");
+        exit(1);
+    }
+
+	// UDP
+	while (1){
+
+		scanf("%s", buffer);
+        size=strlen(buffer);
+		//ptr=strcpy(buffer2, buffer);
+
+        nwrite=sendto(udp_fd, buffer, size, 0, res->ai_addr, res->ai_addrlen);
+        if(nwrite==-1){
+                printf("2");
+                exit(1);
+        }
+		
+		memset(buffer, 0, sizeof(char));
+        addrlen=sizeof(addr);
+
+        nread=recvfrom(udp_fd,buffer, 128, 0, (struct sockaddr*) &addr, &addrlen);
+        if(nread==-1){
+                printf("3");
+                exit(1);
+        }
+	
+        write(1, "echo: ", 6);
+		write(1, buffer, nread);
+		write(1, "\n", 1);
+		memset(buffer, 0, sizeof(char));
+	}
+	//TCP
+	/* 
+	n=getaddrinfo(server_IP, port, &hints, &res);
+	if(n!=0) exit(1);
 
 	tcp_fd=socket(res->ai_family,res->ai_socktype, res->ai_protocol);
-	if(tcp_fd==-1)/*error*/exit(1);
+	if(tcp_fd==-1) exit(1);
 
 	n=connect(tcp_fd,res->ai_addr,res->ai_addrlen);
-	if(n==-1)/*error*/exit(1);
+	if(n==-1) exit(1);
 
 	while (1){
 
@@ -53,7 +100,7 @@ int main(int argc, char *argv[]){
 		nleft = 15;
 		while(nleft >0){
 			nwrite=write(tcp_fd, buffer, nleft);
-			if(nwrite==-1)/*error*/exit(1);
+			if(nwrite==-1) exit(1);
 			else if (nwrite == 0) break;
 			nleft-=nwrite;
 			ptr+=nwrite;
@@ -65,7 +112,7 @@ int main(int argc, char *argv[]){
 
 		while(nleft>0){
 			nread=read(tcp_fd,ptr,nleft);
-			if(n==-1)/*error*/exit(1);
+			if(n==-1) exit(1);
 			else if (nread==0)break;
 			nleft-=nread;
 			ptr+=nread;
@@ -74,7 +121,8 @@ int main(int argc, char *argv[]){
 	}
 
 	freeaddrinfo(res);
-	close(tcp_fd);
+	close(tcp_fd); */
+	return 0;
 }
 
 void parseArgs(int argc, char *argv[], char *port, char *server_IP){
@@ -83,16 +131,14 @@ void parseArgs(int argc, char *argv[], char *port, char *server_IP){
 		while((opt = getopt(argc, argv, "n:p:")) != -1) {  
         	switch(opt){  
             case 'n': 
-				strcpy(server_IP, argv[3]);
+				strcpy(server_IP, argv[2]);
 				break;
             case 'p':  
-				strcpy(port, argv[5]);
+				strcpy(port, argv[4]);
 				break;
 			} 
         }  
     }
-	else{
-		strcpy(port, "58053");
-	} 
+	if(strlen(port)== 0) strcpy(port, "58053");
 	return;
 }
