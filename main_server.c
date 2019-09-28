@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdlib.h>
+#include <dirent.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/socket.h>
@@ -13,13 +14,123 @@
 
 #define PORT "58053"
 
+//Commands
+
+//UDP
+#define REGISTER "REG"
+#define REGISTER_RESPONSE "RGR "
+#define TOPIC_LIST "LTP"
+#define TOPIC_LIST_RESPONSE "LTR "
+#define TOPIC_PROPOSE "PTP"
+#define TOPIC_PROPOSE_RESPONSE "PTR "
+#define QUESTION_LIST "LQU"
+#define QUESTION_LIST_RESPONSE "LQR "
+
+//TCP
+#define GET_QUESTION "GQU"
+#define GET_QUESTION_RESPONSE "QGR "
+#define SUBMIT_QUESTION "QUS"
+#define SUBMIT_QUESTION_RESPONSE "QUR "
+#define SUBMIT_ANSWER "ANS"
+#define SUBMIT_ANSWER_RESPONSE "ANR "
+
+//Status codes
+#define OK "OK"
+#define NOK "NOK"
+#define DUP "DUP"
+#define ERROR "ERR"
+#define END_OF_FILE "EOF"
+
+//Other info
+#define TOPICS "TOPICS"
+
 int max(int x, int y) 
 { 
     if (x > y) 
         return x; 
     else
         return y; 
-} 
+}
+
+int handleRegister(char *info, char *dest){
+    int number;
+
+    strcpy(dest, REGISTER_RESPONSE);
+
+    number = atoi(info);
+
+    if (number > 99999 || number < 10000){
+        strcat(dest, NOK);
+        return 0;
+    }
+
+    strcat(dest, OK);
+    return 0;
+}
+
+int handleTopicList(char *info, char *dest){
+    DIR *topicdir;
+    struct dirent *file;
+    int count=0;
+    char files[512];
+    char count_str[3];
+
+    strcpy(dest, TOPIC_LIST_RESPONSE);
+
+    topicdir = opendir(TOPICS);
+    while((file = readdir(topicdir)) != NULL){
+        if(strcmp(file->d_name, ".") == 0 || strcmp(file->d_name, "..")){
+            continue;
+        }
+        else{
+            count++;
+            strcat(files, file->d_name);
+        }
+    }
+
+    sprintf(count_str, "%d ",count);
+    strcat(dest, count_str);
+    strcat(dest, files);
+    return 0;
+}
+
+int handleTopicPropose(char *info, char *dest){
+    return 0;
+}
+int handleQuestionList(char *info, char *dest){
+    return 0;
+}
+
+int handleUDP(char *buffer){
+    int size = strlen(buffer);
+    char command[3], info[size-3]; 
+    int i, err;
+
+    for (i=0; i<size; i++){
+        if(i < 3){
+            command[i] = buffer[i];
+        }
+        else{
+            info[i-3] = buffer[i];
+        }
+    }
+
+    bzero(buffer, size);
+
+    if (strcmp(command,REGISTER)==0){
+        return handleRegister(info, buffer);
+    }
+    else if (strcmp(command, TOPIC_LIST)==0){
+        return handleTopicList(info, buffer);
+    }
+    else if (strcmp(command, TOPIC_PROPOSE)==0){
+        return handleTopicPropose(info, buffer);
+    }
+    else if(strcmp(command, QUESTION_LIST)==0){
+        return handleQuestionList(info, buffer);
+    }
+    return -1;
+}
 
 int main(){
     struct sigaction act;
@@ -29,7 +140,7 @@ int main(){
     socklen_t addrlen;
     int udp_fd = 0 ,tcp_fd = 0, errcode, maxfd, nready, resp_fd;
     ssize_t n, nread, nsent;
-    char buffer[128], buffer2[128], *ptr;
+    char buffer[512], buffer2[512], *ptr;
     fd_set rfds;
 
     act.sa_handler=SIG_IGN;
@@ -134,6 +245,8 @@ int main(){
             }
 
             printf("Received: %s\n", buffer);
+
+            handleUDP(buffer);
 
             nsent = sendto(udp_fd, buffer, nread, 0, (struct sockaddr*)&addr, addrlen);
 
