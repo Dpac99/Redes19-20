@@ -1,1 +1,6 @@
-bin/
+server
+client
+client_upd
+client_tcp
+server_udp
+server_tcp
