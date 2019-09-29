@@ -11,8 +11,10 @@
 #include <stdio.h>
 #include <signal.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #define PORT "58053"
+#define BUFFERSIZE 512
 
 //Commands
 
@@ -35,14 +37,56 @@
 #define SUBMIT_ANSWER_RESPONSE "ANR "
 
 //Status codes
-#define OK "OK"
-#define NOK "NOK"
-#define DUP "DUP"
-#define ERROR "ERR"
-#define END_OF_FILE "EOF"
+#define OK "OK\n"
+#define NOK "NOK\n"
+#define DUP "DUP\n"
+#define ERROR "ERR\n"
+#define END_OF_FILE "EOF\n"
+#define FULL "FUL\n"
 
 //Other info
 #define TOPICS "TOPICS"
+#define TRUE 1
+#define FALSE 0
+#define USER "USER.txt"
+
+//Cache
+
+struct cache{
+    char **topics;
+    int topic_n;
+    int list_n;
+    char *question_topic;
+    char* questions;
+    int question_n;
+};
+
+struct cache *init(){
+    struct cache *obj = (struct cache*)malloc(sizeof(struct cache));
+    obj->topics = (char**)malloc(10 * sizeof(char*));
+    if(obj->topics == NULL){
+        exit(1);
+    }
+    for(int i =0; i<10; i++){
+        obj->topics[i] = (char*)malloc(BUFFERSIZE * sizeof(char));
+        if(obj->topics[i] == NULL){
+            exit(1);
+        }
+    }
+    obj->topic_n = 0;
+    obj->list_n = 0;
+    obj->question_topic = (char*)malloc(32 * sizeof(char));
+    if(obj->question_topic == NULL){
+        exit(1);
+    }
+    obj->questions = (char*)malloc(BUFFERSIZE * sizeof(char));
+    if(obj->questions == NULL){
+        exit(1);
+    }
+    obj->question_n=0;
+}
+
+//Auxliars
 
 int max(int x, int y) 
 { 
@@ -52,7 +96,52 @@ int max(int x, int y)
         return y; 
 }
 
-int handleRegister(char *info, char *dest){
+void pushArr(char *s, char **arr, int size){
+    for(int i=size-1; i>0; i--){
+        strcpy(arr[i],arr[i-1]);
+    }
+    strcpy(arr[0], s) ;
+}
+
+int comparator(const void *p, const void *q){
+    char p_c[32], q_c[32];
+    struct stat p_s = {0}, q_s = {0};
+    sprintf(p_c, "%s/%s", TOPICS, (char*)p);
+    sprintf(q_c, "%s/%s", TOPICS, (char*)q);
+    stat(p_c, &p_s);
+    stat(q_c, &q_s);
+
+    return (p_s.st_mtim.tv_sec - q_s.st_mtim.tv_sec);
+
+}
+
+void loadFiles(struct cache *c){
+    DIR *dir;
+    struct dirent *ent;
+    char files[100][32];
+    int i=0;
+
+    if((dir=opendir(TOPICS)) != NULL){
+        while((ent = readdir(dir)) != NULL){
+            if(strcmp(ent->d_name, ".") !=0 && strcmp(ent->d_name, "..") != 0){
+                strcpy(files[i++], ent->d_name);
+            }
+        }
+    }
+
+    qsort((void*)files, i, 32*sizeof(char), comparator);
+
+    if(i>9){i=9;}
+
+    c->list_n = i;
+
+    for(; i>=0; i--){
+        strcpy(c->topics[9-i], files[i]);
+    }
+}
+
+//UDP Handlers
+void handleRegister(char *info, char *dest){
     int number;
 
     strcpy(dest, REGISTER_RESPONSE);
@@ -61,47 +150,117 @@ int handleRegister(char *info, char *dest){
 
     if (number > 99999 || number < 10000){
         strcat(dest, NOK);
-        return 0;
+        return;
     }
 
     strcat(dest, OK);
-    return 0;
 }
 
-int handleTopicList(char *info, char *dest){
-    DIR *topicdir;
-    struct dirent *file;
-    int count=0;
-    char files[512];
-    char count_str[3];
+void handleTopicList(char *info, char *dest, struct cache *cache){
+    FILE *fd = NULL;
+    char path[32];
+    int id;
+    sprintf(path, "%s/",TOPICS);
 
     strcpy(dest, TOPIC_LIST_RESPONSE);
 
-    topicdir = opendir(TOPICS);
-    while((file = readdir(topicdir)) != NULL){
-        if(strcmp(file->d_name, ".") == 0 || strcmp(file->d_name, "..")){
-            continue;
+    sprintf(dest + strlen(dest), "%d", cache->list_n);
+    for(int i=0;i<10; i++){
+        if (strlen(cache->topics[i]) > 0){
+            sprintf(path + strlen(path), "%s/%s",cache->topics[i],USER);
+            fd = fopen(path, "r");
+            fscanf(fd, "%d", &id);
+            sprintf(dest + strlen(dest)," %s:%d", cache->topics[i], id);
+        }
+    }
+    strcat(dest, "\n");
+    return;
+}
+
+void handleTopicPropose(char *info, char *dest, struct cache *cache){
+    char topic[16], dir[256], file[32];
+    int uid=0;
+    struct stat st = {0};
+    FILE *fd = NULL;
+
+    sscanf(info, "%s %d", topic, &uid);
+    strcpy(dest, TOPIC_PROPOSE_RESPONSE);
+    if(strlen(topic) ==0 || uid == 0){
+        strcat(dest, NOK);
+        return;
+    }
+    if (cache->topic_n == 99){
+        strcat(dest, FULL);
+        return;
+    }
+
+    sprintf(dir, "%s/%s",TOPICS,topic);
+    sprintf(file, "%s/%s", dir, USER);
+
+    if(stat(dir, &st) == -1){
+        mkdir(dir, 0700);
+        fd = fopen(file, "w");
+        fprintf(fd, "%d", uid);
+        fclose(fd);
+        cache->topic_n++;
+        if(cache->list_n < 10){
+            sprintf(cache->topics[9 - cache->list_n],"%s", topic);
+            cache->list_n++;
         }
         else{
-            count++;
-            strcat(files, file->d_name);
+            pushArr(topic, cache->topics, 10);
+        }
+        strcat(dest, OK);
+        return;
+    }
+    else{
+        strcat(dest, DUP);
+        return;
+    }
+}
+
+void handleQuestionList(char *info, char *dest){
+    char path[32];
+    char questions[100][32];
+    DIR *dir;
+    struct dirent *ent;
+    int i=0, id;
+    FILE *fd = NULL;
+
+    sprintf(path, "%s/%s", TOPICS, info);
+    strcat(dest, QUESTION_LIST_RESPONSE);
+
+    if((dir=opendir(path)) != NULL){
+        while((ent = readdir(dir)) != NULL && i<100){
+            if(strcmp(ent->d_name, ".") !=0 && strcmp(ent->d_name, "..") != 0 && strcmp(ent->d_name, USER) != 0){
+                strcpy(questions[i++], ent->d_name);
+            }
+        }
+        if(i > 99){
+            strcat(dest, FULL);
+            return;
         }
     }
 
-    sprintf(count_str, "%d ",count);
-    strcat(dest, count_str);
-    strcat(dest, files);
-    return 0;
+    sprintf(path + strlen(path), "/%s", USER);
+
+    qsort((void*)questions, i, 32*sizeof(char), comparator);
+    
+    i = i>=10? 10: i;
+
+    sprintf(dest+strlen(dest), "%d", i);
+
+    for(int s = 0;s < i ; s++){
+        fd = fopen(path, "r");
+        fscanf(fd, "%d", &id);
+        fclose(fd);
+        sprintf(dest + strlen(dest), " %s:%d", questions[s], id);
+    }
+     strcat(dest, "\n");
 }
 
-int handleTopicPropose(char *info, char *dest){
-    return 0;
-}
-int handleQuestionList(char *info, char *dest){
-    return 0;
-}
-
-int handleUDP(char *buffer){
+//Request Handlers
+void handleUDP(char *buffer, struct cache *cache){
     int size = strlen(buffer);
     char command[3], info[size-3]; 
     int i, err;
@@ -110,8 +269,8 @@ int handleUDP(char *buffer){
         if(i < 3){
             command[i] = buffer[i];
         }
-        else{
-            info[i-3] = buffer[i];
+        else if (i > 3){
+            info[i-4] = buffer[i];
         }
     }
 
@@ -121,26 +280,30 @@ int handleUDP(char *buffer){
         return handleRegister(info, buffer);
     }
     else if (strcmp(command, TOPIC_LIST)==0){
-        return handleTopicList(info, buffer);
+        return handleTopicList(info, buffer, cache);
     }
     else if (strcmp(command, TOPIC_PROPOSE)==0){
-        return handleTopicPropose(info, buffer);
+        return handleTopicPropose(info, buffer, cache);
     }
     else if(strcmp(command, QUESTION_LIST)==0){
         return handleQuestionList(info, buffer);
     }
-    return -1;
+    else{
+        strcpy(buffer, ERROR);
+    }
 }
 
+//Main
 int main(){
     struct sigaction act;
 	struct addrinfo hints, *res, *i;
     struct sockaddr_in addr;
+    struct cache *cache;
     pid_t pid;
     socklen_t addrlen;
     int udp_fd = 0 ,tcp_fd = 0, errcode, maxfd, nready, resp_fd;
     ssize_t n, nread, nsent;
-    char buffer[512], buffer2[512], *ptr;
+    char buffer[BUFFERSIZE], buffer2[BUFFERSIZE], *ptr;
     fd_set rfds;
 
     act.sa_handler=SIG_IGN;
@@ -148,6 +311,9 @@ int main(){
         printf("Error with sigaction\n");
         exit(1);
     }
+
+    cache = init();
+    loadFiles(cache);
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
@@ -235,7 +401,7 @@ int main(){
             memset(buffer2, 0, sizeof(char)*strlen(buffer2));
             n, nsent, nread = 0;
             addrlen = sizeof(addr);
-            nread = recvfrom(udp_fd, buffer, 128, 0, (struct sockaddr*)&addr, &addrlen);
+            nread = recvfrom(udp_fd, buffer,BUFFERSIZE , 0, (struct sockaddr*)&addr, &addrlen);
 
             if(nread == -1){
                 close(tcp_fd);
@@ -246,10 +412,11 @@ int main(){
 
             printf("Received: %s\n", buffer);
 
-            handleUDP(buffer);
+            handleUDP(buffer, cache);
 
-            nsent = sendto(udp_fd, buffer, nread, 0, (struct sockaddr*)&addr, addrlen);
+            int size = strlen(buffer);
 
+            nsent = sendto(udp_fd, buffer, size, 0, (struct sockaddr*)&addr, addrlen);
             if(nsent == -1){
                 close(tcp_fd);
                 close(udp_fd);

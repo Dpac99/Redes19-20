@@ -38,8 +38,8 @@ int main(int argc, char *argv[]){
 
 	parseArgs(argc, argv, port, server_IP);
 
-	if (server_IP != NULL){
-		printf("%s\n", server_IP);
+	if (strlen(server_IP) == 0){
+		server_IP = NULL;
 	}
 
 	n=getaddrinfo(server_IP, port, &hints, &res);
@@ -57,11 +57,13 @@ int main(int argc, char *argv[]){
 	// UDP
 	while (1){
 
-		scanf("%s", buffer);
-        size=strlen(buffer);
-		//ptr=strcpy(buffer2, buffer);
+		char c;
+		int i=0;
+		while ((c=getchar()) != '\n'){
+			buffer[i++] = c;
+		}
 
-        nwrite=sendto(udp_fd, buffer, size, 0, res->ai_addr, res->ai_addrlen);
+        nwrite=sendto(udp_fd, buffer, i, 0, res->ai_addr, res->ai_addrlen);
         if(nwrite==-1){
                 printf("2");
                 exit(1);
@@ -75,10 +77,7 @@ int main(int argc, char *argv[]){
                 printf("3");
                 exit(1);
         }
-	
-        write(1, "echo: ", 6);
 		write(1, buffer, nread);
-		write(1, "\n", 1);
 		memset(buffer, 0, sizeof(char));
 	}
 	//TCP
