@@ -54,9 +54,10 @@ int main(int argc, char *argv[]){
 
 	struct addrinfo hints, *res;
 	struct sockaddr_in addr;
-	char buffer[256], *port, server_IP[128], command[64];
+	char buffer[256], *port, *server_IP, command[64];
 
 	port = (char*)malloc(16);
+	server_IP = (char*)malloc(256 * sizeof(char));
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family=AF_INET;      // IPv4
@@ -64,6 +65,7 @@ int main(int argc, char *argv[]){
 	hints.ai_flags=AI_NUMERICSERV;
 
 	parseArgs(argc, argv, port, server_IP);
+	if(strlen(server_IP) == 0) server_IP = NULL;
 
 	n=getaddrinfo(server_IP, port, &hints, &res);
 	if(n!=0){
@@ -128,6 +130,8 @@ int main(int argc, char *argv[]){
 			printf("Invalid command.\n");
 		}
 
+		int i = strlen(buffer);
+
         nwrite=sendto(udp_fd, buffer, i, 0, res->ai_addr, res->ai_addrlen);
         if(nwrite==-1){
 			printf("3");
@@ -170,7 +174,6 @@ void parseArgs(int argc, char *argv[], char *port, char *server_IP){
         }  
     }
 	if(strlen(port)== 0) strcpy(port, "58053");
-	if(strlen(server_IP) == 0) server_IP = NULL;
 	return;
 }
 
