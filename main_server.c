@@ -37,12 +37,12 @@
 #define SUBMIT_ANSWER_RESPONSE "ANR "
 
 // Status codes
-#define OK "OK\n"
-#define NOK "NOK\n"
-#define DUP "DUP\n"
-#define ERROR "ERR\n"
-#define END_OF_FILE "EOF\n"
-#define FULL "FUL\n"
+#define OK "OK\n\0"
+#define NOK "NOK\n\0"
+#define DUP "DUP\n\0"
+#define ERROR "ERR\n\0"
+#define END_OF_FILE "EOF\n\0"
+#define FULL "FUL\n\0"
 
 // Other info
 #define TOPICS "TOPICS"
@@ -264,7 +264,7 @@ void handleQuestionList(char *info, char *dest) {
 // Request Handlers
 void handleUDP(char *buffer, struct cache *cache) {
   int size = strlen(buffer);
-  char command[3], info[size - 3];
+  char command[4], info[size - 3];
   int i, err;
 
   for (i = 0; i < size; i++) {
@@ -272,10 +272,11 @@ void handleUDP(char *buffer, struct cache *cache) {
       command[i] = buffer[i];
     } else if (i > 3) {
       info[i - 4] = buffer[i];
+    }else if (i == 3){
+      command[i] = '\0';
     }
   }
-
-  bzero(buffer, size);
+  memset(buffer,0,  BUFFERSIZE);
 
   if (strcmp(command, REGISTER) == 0) {
     return handleRegister(info, buffer);
@@ -442,6 +443,9 @@ int main() {
       handleUDP(buffer, cache);
 
       int size = strlen(buffer);
+
+      write(1,"SENT: ", 6);
+      write(1 , buffer, size);
 
       nsent =
           sendto(udp_fd, buffer, size, 0, (struct sockaddr *)&addr, addrlen);
