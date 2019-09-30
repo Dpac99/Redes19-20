@@ -272,11 +272,11 @@ void handleUDP(char *buffer, struct cache *cache) {
       command[i] = buffer[i];
     } else if (i > 3) {
       info[i - 4] = buffer[i];
-    }else if (i == 3){
+    } else if (i == 3) {
       command[i] = '\0';
     }
   }
-  memset(buffer,0,  BUFFERSIZE);
+  memset(buffer, 0, BUFFERSIZE);
 
   if (strcmp(command, REGISTER) == 0) {
     return handleRegister(info, buffer);
@@ -302,7 +302,8 @@ int main() {
   socklen_t addrlen;
   int udp_fd = 0, tcp_fd = 0, errcode, maxfd, nready, resp_fd;
   ssize_t n, nread, nsent;
-  char buffer[BUFFERSIZE], buffer2[BUFFERSIZE], *ptr;
+  char buffer[BUFFERSIZE], buffer2[BUFFERSIZE], host[BUFFERSIZE],
+      service[BUFFERSIZE], *ptr;
   fd_set rfds;
 
   act1.sa_handler = SIG_IGN;
@@ -438,14 +439,16 @@ int main() {
         exit(flag);
       }
 
-      printf("Received: %s/end\n", buffer);
+      getnameinfo((struct sockaddr *)&addr, addrlen, host, sizeof(host),
+                  service, sizeof service, 0);
+      printf("Received: %s from[%s:%s]\n", buffer, host, service);
 
       handleUDP(buffer, cache);
 
       int size = strlen(buffer);
 
-      write(1,"SENT: ", 6);
-      write(1 , buffer, size);
+      write(1, "SENT: ", 6);
+      write(1, buffer, size);
 
       nsent =
           sendto(udp_fd, buffer, size, 0, (struct sockaddr *)&addr, addrlen);
