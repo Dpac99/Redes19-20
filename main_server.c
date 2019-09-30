@@ -419,9 +419,10 @@ int main() {
       exit(flag);
     }
 
+    memset(buffer, 0, sizeof(char) * BUFFERSIZE);
+    memset(buffer2, 0, sizeof(char) * BUFFERSIZE);
+
     if (FD_ISSET(udp_fd, &rfds)) {
-      memset(buffer, 0, sizeof(char) * BUFFERSIZE);
-      memset(buffer2, 0, sizeof(char) * BUFFERSIZE);
       n, nsent, nread = 0;
       addrlen = sizeof(addr);
       nread = recvfrom(udp_fd, buffer, BUFFERSIZE, 0, (struct sockaddr *)&addr,
@@ -436,7 +437,7 @@ int main() {
         exit(flag);
       }
 
-      printf("Received: %s\n", buffer);
+      printf("Received: %s/end\n", buffer);
 
       handleUDP(buffer, cache);
 
@@ -455,8 +456,6 @@ int main() {
     }
 
     if (FD_ISSET(tcp_fd, &rfds)) {
-      memset(buffer, 0, sizeof(char) * BUFFERSIZE);
-      memset(buffer2, 0, sizeof(char) * BUFFERSIZE);
       n, nsent, nread = 0;
       addrlen = sizeof(addr);
       resp_fd = accept(tcp_fd, (struct sockaddr *)&addr, &addrlen);
