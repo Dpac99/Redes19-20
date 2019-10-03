@@ -1,12 +1,12 @@
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <string.h>
+#include <netinet/in.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 //Commands
 #define REGISTER 				 "REG"
@@ -69,13 +69,14 @@ int main(int argc, char *argv[]){
 	struct User *user = initUser();
 	char buffer[256], *port, *server_IP, command[COMMAND_SIZE];
 
-	port = (char*)malloc(16);
-	server_IP = (char*)malloc(128);
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_INET;      // IPv4
+  hints.ai_socktype = SOCK_DGRAM; // UDP socket
+  hints.ai_flags = AI_NUMERICSERV;
 
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family=AF_INET;      // IPv4
-	hints.ai_socktype=SOCK_DGRAM; // UDP socket
-	hints.ai_flags=AI_NUMERICSERV;
+  parseArgs(argc, argv, port, server_IP);
+  if (strlen(server_IP) == 0)
+    server_IP = NULL;
 
 	//Checks if any of the '-n' or '-p' flags was used
 	parseArgs(argc, argv, port, server_IP);								
@@ -159,24 +160,9 @@ int main(int argc, char *argv[]){
 	return 0;
 }
 
-void parseArgs(int argc, char *argv[], char *port, char *server_IP){
-	if (argc > 1){
-		int opt;
-		while((opt = getopt(argc, argv, "n:p:")) != -1) {  
-        	switch(opt){  
-            case 'n': 
-				strcpy(server_IP, argv[2]);
-				break;
-            case 'p':  
-				strcpy(port, argv[4]);
-				break;
-			} 
-        }  
+    else if (strcmp(command, "topic_select") == 0) {
+      topicSelect(buffer, 0);
     }
-	if(strlen(port)== 0) strcpy(port, "58053");
-	
-	return;
-}
 
 int readCommand(char *buffer){
 	memset(buffer, 0, BUFFER_SIZE);
@@ -194,7 +180,10 @@ int readCommand(char *buffer){
 void communicateUDP(char *buffer, int fd, struct addrinfo *res, struct sockaddr_in addr){
 	int nwrite, nread, size, addrlen;
 
-	size = strlen(buffer);
+    else if ((strcmp(command, "question_list") == 0) ||
+             (strcmp(command, "ql") == 0)) {
+      questionList(buffer, udp_fd, res);
+    }
 
 	nwrite=sendto(fd, buffer, size, 0, res->ai_addr, res->ai_addrlen);
     if(nwrite==-1){
@@ -217,8 +206,10 @@ struct User *initUser(){
 	user->selected_topic = (char*)malloc(10 * sizeof(char));
 	user->selected_question = (char*)malloc(10 * sizeof(char));
 
-	return user;
-}
+    else if ((strcmp(command, "question_submit") == 0) ||
+             (strcmp(command, "qs") == 0)) {
+      questionSubmit(buffer);
+    }
 
 int registerUser(char *buffer, struct User *user){
 	char *token;
@@ -252,21 +243,100 @@ int registerUser(char *buffer, struct User *user){
 
 void topicList(char *buffer, struct User *user){
 
+    memset(buffer, 0, sizeof(char));
+    memset(command, 0, sizeof(char));
+    scanf("%s", command);
+    size = readCommand(buffer);
+  }
+  return 0;
 }
-void topicSelect(char *buffer, int flag){
 
+void parseArgs(int argc, char *argv[], char *port, char *server_IP) {
+  if (argc > 1) {
+    int opt;
+    while ((opt = getopt(argc, argv, "n:p:")) != -1) {
+      switch (opt) {
+      case 'n':
+        strcpy(server_IP, argv[2]);
+        break;
+      case 'p':
+        strcpy(port, argv[4]);
+        break;
+      }
+    }
+  }
+  if (strlen(port) == 0)
+    strcpy(port, "58053");
+
+  return;
 }
 void topicPropose(char *buffer, struct User *user){
-
 }
-void questionList(char *buffer, struct User *user){
 
+int readCommand(char *buffer) {
+  memset(buffer, 0, sizeof(char));
+  char c = getchar();
+  int i = 0;
+
+  while (c != '\n') {
+    buffer[i] = c;
+    c = getchar();
+    i++;
+  }
+  return i;
 }
-void questionGet(char *buffer, int flag){
 
+void questionList(char *buffer, struct User *user){}
+
+void sendUDP(char *buffer, int fd, struct addrinfo *res,
+             struct sockaddr_in addr) {
+  int nwrite, nread, size;
+
+  size = strlen(buffer);
+
+  nwrite = sendto(fd, buffer, size, 0, res->ai_addr, res->ai_addrlen);
+  if (nwrite == -1) {
+    exit(1);
+  }
+  return;
 }
-void questionSubmit(char *buffer){
 
+struct User *initUser() {
+  struct User *user = (struct User *)malloc(sizeof(struct User));
+  user->userId = 0;
+  user->selected_topic = (char *)malloc(10 * sizeof(char));
+  user->selected_question = (char *)malloc(10 * sizeof(char));
+
+  return user;
+}
+
+void registerUser(char *buffer, struct User *user) {
+  char *token;
+  int id, count = 0, n;
+  token = strtok(buffer, " ");
+  id = atoi(token);
+  n = id;
+
+  if (id == 0) {
+    printf("Invalid command format.\n");
+    return;
+  }
+  while (n != 0) {
+    n /= 10;
+    ++count;
+  }
+  if (count != 5) {
+    printf("Invalid command format.\n");
+    return;
+  }
+  if ((token = strtok(NULL, " ")) != NULL) {
+    printf("Invalid command format.\n");
+    return;
+  }
+
+  memset(buffer, 0, sizeof(char));
+  sprintf(buffer, "%s %d", REGISTER, id);
+  return;
 }
 void answerSubmit(char *buffer){
 }
