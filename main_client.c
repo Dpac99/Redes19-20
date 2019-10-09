@@ -53,8 +53,10 @@ void answerSubmit(char *buffer);
 
 int main(int argc, char *argv[]) {
 
-  int tcp_fd, udp_fd, addrlen;
+  int tcp_fd, udp_fd;
   int nleft, nread, nwrite, n, errcode, size;
+
+  socklen_t addrlen;
 
   struct addrinfo hints, *res;
   struct sockaddr_in addr;
@@ -206,7 +208,7 @@ int readCommand(char *buffer) {
 
 void sendUDP(char *buffer, int fd, struct addrinfo *res,
              struct sockaddr_in addr) {
-  int nwrite, nread, size;
+  int nwrite, size;
 
   size = strlen(buffer);
 
