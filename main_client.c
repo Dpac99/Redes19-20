@@ -36,8 +36,9 @@
 
 struct User{
 	int userId;
-	char *selected_topic;		
+	int selected_topic;		
 	char *selected_question;
+	char **topics;
 };
 
 void parseArgs(int argc, char *argv[], char *port, char *server_IP);
@@ -47,7 +48,7 @@ void communicateUDP(char *buffer, int fd, struct addrinfo *res, struct sockaddr_
 
 
 int registerUser(char *buffer, struct User *user);
-void topicList(char *buffer, struct User *user);
+int topicList(char *buffer, struct User *user);
 void topicSelect(char *buffer, int flag);
 void topicPropose(char *buffer, struct User *user);
 void questionList(char *buffer, struct User *user);
@@ -58,6 +59,10 @@ void answerSubmit(char *buffer);
 void handleRGR(char *buffer, struct User *user);
 void handleLTR(char *buffer, struct User *user);
 void handlePTR(char *buffer, struct User *user);
+
+
+
+
 
 int main(int argc, char *argv[]){
 
@@ -84,15 +89,15 @@ int main(int argc, char *argv[]){
 	n=getaddrinfo(server_IP, port, &hints, &res);
 	if(n!=0){
 		printf("Server: %s . Port: %s\n", server_IP, port);
-        exit(1);
-    }
+     	exit(1);
+  }
 
 	//Opens UDP socket
 	udp_fd=socket(res->ai_family,res->ai_socktype, res->ai_protocol);	
 	if(udp_fd==-1){
 		printf("1");
-        exit(1);
-    }
+    	exit(1);
+  }
 	
 	scanf("%s", command);
 	size = readCommand(buffer);
@@ -112,7 +117,14 @@ int main(int argc, char *argv[]){
 		}
 
 		else if((strcmp(command, "topic_list") == 0)|| (strcmp(command, "tl") == 0)){
-			topicList(buffer, user);
+			status = topicList(buffer, user);
+			if (status == VALID){
+				communicateUDP(buffer, udp_fd, res, addr);
+				handleLTR(buffer, user);
+			}
+			else{
+				memset(buffer, 0, BUFFER_SIZE);
+			}
 		}
 
 		else if(strcmp(command, "topic_select") == 0){
@@ -246,32 +258,42 @@ int registerUser(char *buffer, struct User *user){
 
 	user->userId = id;
 	memset(buffer, 0, BUFFER_SIZE);
-	sprintf(buffer, "%s %d", REGISTER, id);
+	sprintf(buffer, "%s %d\n", REGISTER, id);
 	return VALID;
 }
 
-void topicList(char *buffer, struct User *user){
+int topicList(char *buffer, struct User *user){
+	char *token;
 
+	if((token = strtok(buffer, " ")) != NULL){
+		printf("Invalid command format.\n");
+		return INVALID;
+	}
+
+	memset(buffer, 0, BUFFER_SIZE);
+	sprintf(buffer, "%s\n", TOPIC_LIST);
+	return VALID;
 }
+
 void topicSelect(char *buffer, int flag){
-
 }
+
 void topicPropose(char *buffer, struct User *user){
-
 }
+
 void questionList(char *buffer, struct User *user){
-
 }
+
 void questionGet(char *buffer, int flag){
-
 }
+
 void questionSubmit(char *buffer){
-
 }
+
 void answerSubmit(char *buffer){
 }
 
-void  handleRGR(char *buffer, struct User *user){
+void handleRGR(char *buffer, struct User *user){
 	char *token;
 	printf("Received: '%s' from server\n", buffer);
 	token = strtok(buffer, " ");
@@ -279,15 +301,41 @@ void  handleRGR(char *buffer, struct User *user){
 	if (strcmp(token, REGISTER_RESPONSE) == 0){
 		token = strtok(NULL, " ");
 		if(strcmp(token, OK) == 0){
-			printf("User '%d' registered.\n", user->userId);
+			printf("User '%d' registered successfully.\n", user->userId);
 		}
 		else if(strcmp(token, NOK) == 0){
+			printf("Failed to register user '%d'.\n", user->userId);
 			user->userId = -1;
-			printf("Failed to register user.\n");
 		}
 	}
 	else{
 		printf("Error receiving answer from server.\n");
 	}
 	return;
+}
+
+void handleLTP(char *buffer, struct User *user){
+	char *topic;
+	char *token;
+	
+	topic = strtok(buffer, " ");
+	if( strcmp(topic, TOPIC_LIST_RESPONSE) != 0){
+		printf("Error receiving answer from server.\n");
+		return;
+	}
+
+	printf("%s ", topic);
+
+	while((topic = strtok(NULL, " ") != NULL){
+		token = strtok(topic, ":");
+		if(strlen(token) > 10){		//if the topics length is greater than 10 caracthers
+			printf("Error receiving answer from server.\n");
+		}
+
+		token = strtok(NULL, ":");
+
+		if((atoi(token) == 0) || (strlen(token) != 5)){
+			printf("Error receiving answer from server.\n");
+		}
+	}
 }
