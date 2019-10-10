@@ -81,11 +81,13 @@ int main(int argc, char *argv[]){
 		}
 
 		else if(strcmp(command, "topic_select") == 0){
-			topicSelect(buffer, 0);
+			topicSelect(buffer, 0, user);
+			memset(buffer, 0, BUFFER_SIZE);
 		}
 
 		else if(strcmp(command, "ts") == 0){
-			topicSelect(buffer, 1);
+			topicSelect(buffer, 1, user);
+			memset(buffer, 0, BUFFER_SIZE);
 		}
 
 		else if((strcmp(command, "topic_propose") == 0)|| (strcmp(command, "tp") == 0)){
@@ -197,7 +199,7 @@ struct User *initUser(){
 	}
 
 	user->userId = -1;
-	user->selected_topic = -1;
+	user->selected_topic = "";
 
 	for(i = 0; i < 99; i++){
 		user->topics[i] = (char*)malloc(10 * sizeof(char));

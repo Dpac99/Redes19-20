@@ -5,7 +5,7 @@
 
 int registerUser(char *buffer, struct User *user);
 int topicList(char *buffer, struct User *user);
-void topicSelect(char *buffer, int flag);
+void topicSelect(char *buffer, int flag, struct User *user);
 void topicPropose(char *buffer, struct User *user);
 void questionList(char *buffer, struct User *user);
 void questionGet(char *buffer, int flag);
