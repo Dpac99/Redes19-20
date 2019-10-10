@@ -50,9 +50,6 @@ void handleLTR(char *buffer, struct User *user){
 			printf("Error receiving answer from server.\n");
 			err = 1;
 		}
-			printf("Error receiving answer from server.\n");
-			err = 1;
-		}
 		return;
 	}
 
