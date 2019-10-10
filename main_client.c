@@ -1,67 +1,11 @@
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <string.h>
-#include <stdio.h>
-
-//Commands
-#define REGISTER 				 "REG"
-#define REGISTER_RESPONSE 		 "RGR"
-#define TOPIC_LIST 				 "LTP" 
-#define TOPIC_LIST_RESPONSE 	 "LTR"
-#define TOPIC_PROPOSE 			 "PTP"
-#define TOPIC_PROPOSE_RESPONSE 	 "PTR"
-#define QUESTION_LIST 			 "LQU"
-#define QUESTION_LIST_RESPONSE 	 "LQR"
-#define GET_QUESTION 			 "GQU"
-#define GET_QUESTION_RESPONSE 	 "QGR"
-#define SUBMIT_QUESTION 		 "QUS"
-#define SUBMIT_QUESTION_RESPONSE "QUR"
-#define SUBMIT_ANSWER 			 "ANS"
-#define SUBMIT_ANSWER_RESPONSE 	 "ANR"
-#define OK 						 "OK\n"
-#define NOK 					 "NOK\n" 
-#define DUP 					 "DUP"
-#define ERROR 					 "ERR"
-#define END_OF_FILE 			 "EOF"
-
-#define BUFFER_SIZE				 256
-#define COMMAND_SIZE			 64
-#define VALID					 1
-#define INVALID				 	 0
-
-struct User{
-	int userId;
-	int selected_topic;		
-	char *selected_question;
-	char **topics;
-};
+#include "consts.h"
+#include "client_handlers.h"
+#include "client_commands.h"
 
 void parseArgs(int argc, char *argv[], char *port, char *server_IP);
 int readCommand(char *buffer);
 struct User* initUser();
 void communicateUDP(char *buffer, int fd, struct addrinfo *res, struct sockaddr_in addr);
-
-
-int registerUser(char *buffer, struct User *user);
-int topicList(char *buffer, struct User *user);
-void topicSelect(char *buffer, int flag);
-void topicPropose(char *buffer, struct User *user);
-void questionList(char *buffer, struct User *user);
-void questionGet(char *buffer, int flag);
-void questionSubmit(char *buffer);
-void answerSubmit(char *buffer);
-
-void handleRGR(char *buffer, struct User *user);
-void handleLTR(char *buffer, struct User *user);
-void handlePTR(char *buffer, struct User *user);
-
-
-
 
 
 int main(int argc, char *argv[]){
@@ -75,7 +19,16 @@ int main(int argc, char *argv[]){
 	char buffer[256], *port, *server_IP, command[COMMAND_SIZE];
 
 	port = (char*)malloc(16);
+	if(port == NULL){
+		printf("Error allocating memory.\n");
+		exit(1);
+	}
+
 	server_IP = (char*)malloc(128);
+	if(server_IP == NULL){
+			printf("Error allocating memory.\n");
+			exit(1);
+		}
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family=AF_INET;      // IPv4
@@ -208,134 +161,51 @@ void communicateUDP(char *buffer, int fd, struct addrinfo *res, struct sockaddr_
 
 	size = strlen(buffer);
 
-	nwrite=sendto(fd, buffer, size, 0, res->ai_addr, res->ai_addrlen);
+	nwrite = sendto(fd, buffer, size, 0, res->ai_addr, res->ai_addrlen);
     if(nwrite==-1){
 		exit(1);
 	}
 	memset(buffer, 0, BUFFER_SIZE);
 	addrlen=sizeof(addr);
 
-	nread=recvfrom(fd,buffer, BUFFER_SIZE, 0, (struct sockaddr*) &addr, &addrlen);
+	nread = recvfrom(fd,buffer, BUFFER_SIZE, 0, (struct sockaddr*) &addr, &addrlen);
 	if(nread==-1){
-		printf("4");
 		exit(1);
 	}
 	return;
 }
 
 struct User *initUser(){
+	int i;
+
 	struct User *user = (struct User *)malloc(sizeof(struct User));
-	user->userId = -1;
-	user->selected_topic = (char*)malloc(10 * sizeof(char));
+	if(user == NULL){
+		printf("Error allocating memory.\n");
+		exit(1);
+	}
+
 	user->selected_question = (char*)malloc(10 * sizeof(char));
+	if( user->selected_question == NULL){
+		printf("Error allocating memory.\n");
+		exit(1);
+	}
+
+	user->topics = (char**)malloc(99 * sizeof(char*));
+	if(user->topics == NULL){
+		printf("Error allocating memory.\n");
+		exit(1);
+	}
+
+	user->userId = -1;
+	user->selected_topic = -1;
+
+	for(i = 0; i < 99; i++){
+		user->topics[i] = (char*)malloc(10 * sizeof(char));
+		if(user->topics[i] == NULL){
+			printf("Error allocating memory.\n");
+			exit(1);
+		}
+	}
 
 	return user;
-}
-
-int registerUser(char *buffer, struct User *user){
-	char *token;
-	int id, count = 0, n;
-	token = strtok(buffer, " ");
-	id = atoi(token);
-	n = id;
-	
-	if(id == 0){
-		printf("Invalid command format.\n");
-		return INVALID;
-	}
-    while(n != 0){	
-        n /= 10;
-        ++count;
-    }
-	if(count != 5){
-		printf("Invalid command format.\n");
-		return INVALID;
-	}
-	if((token = strtok(NULL, " ")) != NULL){
-		printf("Invalid command format.\n");
-		return INVALID;
-	}
-
-	user->userId = id;
-	memset(buffer, 0, BUFFER_SIZE);
-	sprintf(buffer, "%s %d\n", REGISTER, id);
-	return VALID;
-}
-
-int topicList(char *buffer, struct User *user){
-	char *token;
-
-	if((token = strtok(buffer, " ")) != NULL){
-		printf("Invalid command format.\n");
-		return INVALID;
-	}
-
-	memset(buffer, 0, BUFFER_SIZE);
-	sprintf(buffer, "%s\n", TOPIC_LIST);
-	return VALID;
-}
-
-void topicSelect(char *buffer, int flag){
-}
-
-void topicPropose(char *buffer, struct User *user){
-}
-
-void questionList(char *buffer, struct User *user){
-}
-
-void questionGet(char *buffer, int flag){
-}
-
-void questionSubmit(char *buffer){
-}
-
-void answerSubmit(char *buffer){
-}
-
-void handleRGR(char *buffer, struct User *user){
-	char *token;
-	printf("Received: '%s' from server\n", buffer);
-	token = strtok(buffer, " ");
-
-	if (strcmp(token, REGISTER_RESPONSE) == 0){
-		token = strtok(NULL, " ");
-		if(strcmp(token, OK) == 0){
-			printf("User '%d' registered successfully.\n", user->userId);
-		}
-		else if(strcmp(token, NOK) == 0){
-			printf("Failed to register user '%d'.\n", user->userId);
-			user->userId = -1;
-		}
-	}
-	else{
-		printf("Error receiving answer from server.\n");
-	}
-	return;
-}
-
-void handleLTP(char *buffer, struct User *user){
-	char *topic;
-	char *token;
-	
-	topic = strtok(buffer, " ");
-	if( strcmp(topic, TOPIC_LIST_RESPONSE) != 0){
-		printf("Error receiving answer from server.\n");
-		return;
-	}
-
-	printf("%s ", topic);
-
-	while((topic = strtok(NULL, " ") != NULL){
-		token = strtok(topic, ":");
-		if(strlen(token) > 10){		//if the topics length is greater than 10 caracthers
-			printf("Error receiving answer from server.\n");
-		}
-
-		token = strtok(NULL, ":");
-
-		if((atoi(token) == 0) || (strlen(token) != 5)){
-			printf("Error receiving answer from server.\n");
-		}
-	}
 }
