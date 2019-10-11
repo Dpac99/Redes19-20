@@ -46,11 +46,9 @@ void handleLTR(char *buffer, struct User *user){
 		n_topics = atoi(topic);
 
 		if( msg_size != 5){
-			printf("Error receiving answer from server.\n");
 			err = 1;
 		}
 		else if((topic = strtok(NULL, " ")) != NULL){				//If so, checks if the protocol msg ends correctly.
-			printf("Error receiving answer from server.\n");
 			err = 1;
 		}
 		else{
@@ -59,7 +57,6 @@ void handleLTR(char *buffer, struct User *user){
 	}
 
 	else if((n_topics = atoi(topic) == 0)){							//Checks if the 'N' parameter is a valid integer
-		printf("Error receiving answer from server.\n");
 		err = 1;
 	}
 
