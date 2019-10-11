@@ -10,6 +10,23 @@ void sigHandler(int _) {
   flag = 0;
 }
 
+void parseArgs(int argc, char *argv[], char *port) {
+  if (argc > 1) {
+    int opt;
+    while ((opt = getopt(argc, argv, "p:")) != -1) {
+      switch (opt) {
+      case 'p':
+        strcpy(port, argv[2]);
+        break;
+      }
+    }
+  }
+  if (strlen(port) == 0)
+    strcpy(port, PORT);
+
+  return;
+}
+
 // Request Handlers
 int udpHandler(char *buffer) {
   int size = strlen(buffer);
@@ -84,7 +101,7 @@ int tcpHandler(char *buffer) {
 }
 
 // Main
-int main() {
+int main(int argc, char *argv[]) {
   struct sigaction act1;
   struct sigaction act2;
   struct addrinfo hints, *res, *i;
@@ -94,8 +111,16 @@ int main() {
   int udp_fd = 0, tcp_fd = 0, errcode, maxfd, nready, resp_fd;
   ssize_t n, nread, nsent;
   char buffer[BUFFER_SIZE], buffer2[BUFFER_SIZE], host[BUFFER_SIZE],
-      service[BUFFER_SIZE], *ptr;
+      service[BUFFER_SIZE], *ptr, *port;
   fd_set rfds;
+
+  port = (char *)malloc(16);
+  if (port == NULL) {
+    printf("Error allocating memory.\n");
+    exit(1);
+  }
+
+  parseArgs(argc, argv, port);
 
   act1.sa_handler = SIG_IGN;
   if (sigaction(SIGCHLD, &act1, NULL) == -1) {
@@ -120,10 +145,12 @@ int main() {
   hints.ai_socktype = 0; // Accepts TCP and UDP sockets
   hints.ai_flags = AI_PASSIVE | AI_NUMERICSERV;
 
-  if ((errcode = getaddrinfo(NULL, PORT, &hints, &res)) != 0) {
+  if ((errcode = getaddrinfo(NULL, port, &hints, &res)) != 0) {
     printf("Error with getaddrinfo\n");
     exit(1);
   }
+
+  printf("Server running on port %s\n\n", port);
 
   for (i = res; i != NULL; i = i->ai_next) {
     if (i->ai_socktype == SOCK_DGRAM) { // UDP Socket

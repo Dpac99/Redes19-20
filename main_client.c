@@ -11,7 +11,7 @@ void communicateUDP(char *buffer, int fd, struct addrinfo *res,
 int main(int argc, char *argv[]) {
 
   // INITIALIZATION OF GLOBAL VARIABLES
-  int tcp_fd, udp_fd, n, size, status;
+  int udp_fd, n, size, status;
 
   struct addrinfo hints, *res;
   struct sockaddr_in addr;
@@ -94,7 +94,8 @@ int main(int argc, char *argv[]) {
              (strcmp(command, "tp") == 0)) {
       status = topicPropose(buffer, user);
       if (status == VALID) {
-        // TODO: implement communication and handler
+        communicateUDP(buffer, udp_fd, res, addr);
+        handlePTR(buffer, user);
       } else {
         memset(buffer, 0, BUFFER_SIZE);
       }
@@ -175,7 +176,8 @@ int readCommand(char *buffer) {
 
 void communicateUDP(char *buffer, int fd, struct addrinfo *res,
                     struct sockaddr_in addr) {
-  int nwrite, nread, size, addrlen;
+  int nwrite, nread, size;
+  socklen_t addrlen;
 
   size = strlen(buffer);
 
