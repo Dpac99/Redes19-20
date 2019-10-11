@@ -218,7 +218,12 @@ struct User *initUser() {
   }
 
   user->userId = -1;
-  user->selected_topic = "";
+  
+  user->selected_topic = (char*)malloc(10 * sizeof(char));
+	if( user->selected_topic == NULL){
+		printf("Error allocating memory.\n");
+		exit(1);
+	}
 
   for (i = 0; i < 99; i++) {
     user->topics[i] = (char *)malloc(10 * sizeof(char));
