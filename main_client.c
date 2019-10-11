@@ -91,11 +91,25 @@ int main(int argc, char *argv[]){
 		}
 
 		else if((strcmp(command, "topic_propose") == 0)|| (strcmp(command, "tp") == 0)){
-			topicPropose(buffer, user);
+			status = topicPropose(buffer, user);
+			if (status == VALID) {
+				//TODO: implement communication and handler
+			}
+			else {
+				memset(buffer, 0, BUFFER_SIZE);
+
+			}
 		}
 
 		else if((strcmp(command, "question_list") == 0)|| (strcmp(command, "ql") == 0)){
-			questionList(buffer, user);
+			status = questionList(buffer, user);
+			if (status == VALID) {
+				//TODO: implement communication and handler
+			}
+			else {
+				memset(buffer, 0, BUFFER_SIZE);
+
+			}
 		}
 
 		else if(strcmp(command, "question_get") == 0){

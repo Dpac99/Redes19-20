@@ -38,7 +38,8 @@
 #define INVALID				 	 	0
 
 #define REGISTER_REG_LENGTH			6	// after register/reg: " *****"
-#define TOPIC_LIST_LENGTH			0 	// after topic_list: ""
+#define TOPIC_LIST_LENGTH			0 	// after topic_list/tl: ""
+#define QUESTION_LIST_LENGTH			0 	// after question_list/ql: ""
 
 struct User{
 	int userId;
