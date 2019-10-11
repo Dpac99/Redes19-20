@@ -27,7 +27,7 @@ int handleTopicList(char *info, char *dest) {
   int i = 0;
   err = sprintf(path, "%s/", TOPICS);
   if (err < 0) {
-    memset(dest, 0, BUFFERSIZE);
+    memset(dest, 0, BUFFER_SIZE);
     strcpy(dest, ERROR);
     return 1;
   }
@@ -41,7 +41,7 @@ int handleTopicList(char *info, char *dest) {
       }
     }
   } else {
-    memset(dest, 0, BUFFERSIZE);
+    memset(dest, 0, BUFFER_SIZE);
     strcpy(dest, ERROR);
     return 1;
   }
@@ -50,33 +50,33 @@ int handleTopicList(char *info, char *dest) {
 
   err = sprintf(dest + strlen(dest), "%d", i);
   if (err < 0) {
-    memset(dest, 0, BUFFERSIZE);
+    memset(dest, 0, BUFFER_SIZE);
     strcpy(dest, ERROR);
     return 1;
   }
   for (int c = 0; c < i; c++) {
     err = sprintf(path + strlen(path), "%s/%s", files[c], USER);
     if (err < 0) {
-      memset(dest, 0, BUFFERSIZE);
+      memset(dest, 0, BUFFER_SIZE);
       strcpy(dest, ERROR);
       return 1;
     }
     fd = fopen(path, "r");
     if (fd == NULL) {
-      memset(dest, 0, BUFFERSIZE);
+      memset(dest, 0, BUFFER_SIZE);
       strcpy(dest, ERROR);
       return 1;
     }
     err = fscanf(fd, "%d", &id);
     if (err < 0) {
-      memset(dest, 0, BUFFERSIZE);
+      memset(dest, 0, BUFFER_SIZE);
       strcpy(dest, ERROR);
       return 1;
     }
     fclose(fd);
     err = sprintf(dest + strlen(dest), " %s:%d", files[c], id);
     if (err < 0) {
-      memset(dest, 0, BUFFERSIZE);
+      memset(dest, 0, BUFFER_SIZE);
       strcpy(dest, ERROR);
       return 1;
     }
@@ -86,7 +86,7 @@ int handleTopicList(char *info, char *dest) {
 }
 
 int handleTopicPropose(char *info, char *dest) {
-  char topic[16], dir[256], file[BUFFERSIZE];
+  char topic[16], dir[256], file[BUFFER_SIZE];
   int uid = 0, count = 0, err;
   struct stat st = {0};
   FILE *fd = NULL;
@@ -94,7 +94,7 @@ int handleTopicPropose(char *info, char *dest) {
   struct dirent *ent;
 
   err = sscanf(info, "%s %d", topic, &uid);
-  memset(dest, 0, BUFFERSIZE);
+  memset(dest, 0, BUFFER_SIZE);
   strcpy(dest, ERROR);
   return 1;
   strcpy(dest, TOPIC_PROPOSE_RESPONSE);
@@ -105,13 +105,13 @@ int handleTopicPropose(char *info, char *dest) {
 
   err = sprintf(dir, "%s/%s", TOPICS, topic);
   if (err < 0) {
-    memset(dest, 0, BUFFERSIZE);
+    memset(dest, 0, BUFFER_SIZE);
     strcpy(dest, ERROR);
     return 1;
   }
   err = sprintf(file, "%s/%s", dir, USER);
   if (err < 0) {
-    memset(dest, 0, BUFFERSIZE);
+    memset(dest, 0, BUFFER_SIZE);
     strcpy(dest, ERROR);
     return 1;
   }
@@ -123,7 +123,7 @@ int handleTopicPropose(char *info, char *dest) {
       }
     }
   } else {
-    memset(dest, 0, BUFFERSIZE);
+    memset(dest, 0, BUFFER_SIZE);
     strcpy(dest, ERROR);
     return 1;
   }
@@ -156,7 +156,7 @@ int handleQuestionList(char *info, char *dest) {
 
   err = sprintf(path, "%s/%s", TOPICS, info);
   if (err < 0) {
-    memset(dest, 0, BUFFERSIZE);
+    memset(dest, 0, BUFFER_SIZE);
     strcpy(dest, ERROR);
     return 1;
   }
@@ -174,14 +174,14 @@ int handleQuestionList(char *info, char *dest) {
       return 0;
     }
   } else {
-    memset(dest, 0, BUFFERSIZE);
+    memset(dest, 0, BUFFER_SIZE);
     strcpy(dest, ERROR);
     return 1;
   }
 
   err = sprintf(user, "%s/%s", path, USER);
   if (err < 0) {
-    memset(dest, 0, BUFFERSIZE);
+    memset(dest, 0, BUFFER_SIZE);
     strcpy(dest, ERROR);
     return 1;
   }
@@ -190,7 +190,7 @@ int handleQuestionList(char *info, char *dest) {
 
   err = sprintf(dest + strlen(dest), "%d", i);
   if (err < 0) {
-    memset(dest, 0, BUFFERSIZE);
+    memset(dest, 0, BUFFER_SIZE);
     strcpy(dest, ERROR);
     return 1;
   }
@@ -199,13 +199,13 @@ int handleQuestionList(char *info, char *dest) {
     int c = 0;
     fd = fopen(user, "r");
     if (fd == NULL) {
-      memset(dest, 0, BUFFERSIZE);
+      memset(dest, 0, BUFFER_SIZE);
       strcpy(dest, ERROR);
       return 1;
     }
     err = fscanf(fd, "%d", &id);
     if (err < 0) {
-      memset(dest, 0, BUFFERSIZE);
+      memset(dest, 0, BUFFER_SIZE);
       strcpy(dest, ERROR);
       return 1;
     }
@@ -215,21 +215,21 @@ int handleQuestionList(char *info, char *dest) {
     }
     err = sprintf(dest + strlen(dest), " %s:%d", questions[s], id);
     if (err < 0) {
-      memset(dest, 0, BUFFERSIZE);
+      memset(dest, 0, BUFFER_SIZE);
       strcpy(dest, ERROR);
       return 1;
     }
     if (c == 3) {
       err = sprintf(dest + strlen(dest), ":NA");
       if (err < 0) {
-        memset(dest, 0, BUFFERSIZE);
+        memset(dest, 0, BUFFER_SIZE);
         strcpy(dest, ERROR);
         return 1;
       }
     } else {
       err = sprintf(dest + strlen(dest), ":%d", c - 3);
       if (err < 0) {
-        memset(dest, 0, BUFFERSIZE);
+        memset(dest, 0, BUFFER_SIZE);
         strcpy(dest, ERROR);
         return 1;
       }

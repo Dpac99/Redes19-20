@@ -17,7 +17,7 @@ int udpHandler(char *buffer) {
   int i;
 
   if (buffer[size - 1] != '\n') {
-    memset(buffer, 0, BUFFERSIZE);
+    memset(buffer, 0, BUFFER_SIZE);
     strcpy(buffer, ERROR);
     return 0;
   }
@@ -31,7 +31,7 @@ int udpHandler(char *buffer) {
       command[i] = '\0';
     }
   }
-  memset(buffer, 0, BUFFERSIZE);
+  memset(buffer, 0, BUFFER_SIZE);
 
   if (strcmp(command, REGISTER) == 0) {
     return handleRegister(info, buffer);
@@ -54,7 +54,7 @@ int tcpHandler(char *buffer) {
   int i;
 
   if (buffer[size - 1] != '\n') {
-    memset(buffer, 0, BUFFERSIZE);
+    memset(buffer, 0, BUFFER_SIZE);
     strcpy(buffer, ERROR);
     return 0;
   }
@@ -68,7 +68,7 @@ int tcpHandler(char *buffer) {
       command[i] = '\0';
     }
   }
-  memset(buffer, 0, BUFFERSIZE);
+  memset(buffer, 0, BUFFER_SIZE);
 
   if (strcmp(command, GET_QUESTION) == 0) {
     return handleGetQuestion(info, buffer);
@@ -93,8 +93,8 @@ int main() {
   socklen_t addrlen;
   int udp_fd = 0, tcp_fd = 0, errcode, maxfd, nready, resp_fd;
   ssize_t n, nread, nsent;
-  char buffer[BUFFERSIZE], buffer2[BUFFERSIZE], host[BUFFERSIZE],
-      service[BUFFERSIZE], *ptr;
+  char buffer[BUFFER_SIZE], buffer2[BUFFER_SIZE], host[BUFFER_SIZE],
+      service[BUFFER_SIZE], *ptr;
   fd_set rfds;
 
   act1.sa_handler = SIG_IGN;
@@ -203,15 +203,15 @@ int main() {
       exit(flag);
     }
 
-    memset(buffer, 0, sizeof(char) * BUFFERSIZE);
-    memset(buffer2, 0, sizeof(char) * BUFFERSIZE);
+    memset(buffer, 0, sizeof(char) * BUFFER_SIZE);
+    memset(buffer2, 0, sizeof(char) * BUFFER_SIZE);
 
     if (FD_ISSET(udp_fd, &rfds)) {
       n = 0;
       nsent = 0;
       nread = 0;
       addrlen = sizeof(addr);
-      nread = recvfrom(udp_fd, buffer, BUFFERSIZE, 0, (struct sockaddr *)&addr,
+      nread = recvfrom(udp_fd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&addr,
                        &addrlen);
 
       if (nread == -1) {

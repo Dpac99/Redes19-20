@@ -17,7 +17,6 @@
 #include <unistd.h>
 
 #define PORT "58053"
-#define BUFFERSIZE 2048
 
 // Commands
 
@@ -58,5 +57,21 @@
 #define IMG "IMG"
 #define IMG_DATA "IMG_DATA.txt"
 #define ANS_DATA "ANS_DATA.txt"
+
+#define BUFFER_SIZE				 	2048
+#define COMMAND_SIZE			 	64
+#define VALID					 	1
+#define INVALID				 	 	0
+
+#define REGISTER_REG_LENGTH			6	// after register/reg: " *****"
+#define TOPIC_LIST_LENGTH			0 	// after topic_list/tl: ""
+#define QUESTION_LIST_LENGTH			0 	// after question_list/ql: ""
+
+struct User{
+	int userId;
+	char *selected_topic;		
+	char *selected_question;
+	char **topics;
+};
 
 #endif
