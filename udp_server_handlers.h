@@ -1,9 +1,9 @@
 #ifndef __UDP_SERVER_HANDLERS_h__
 #define __UDP_SERVER_HANDLERS_h__
 
-void handleRegister(char *info, char *dest);
-void handleTopicList(char *info, char *dest);
-void handleTopicPropose(char *info, char *dest);
-void handleQuestionList(char *info, char *dest);
+int handleRegister(char *info, char *dest);
+int handleTopicList(char *info, char *dest);
+int handleTopicPropose(char *info, char *dest);
+int handleQuestionList(char *info, char *dest);
 
 #endif

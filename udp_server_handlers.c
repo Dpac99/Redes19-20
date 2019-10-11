@@ -1,7 +1,7 @@
 #include "consts.h"
 #include "helpers.h"
 
-void handleRegister(char *info, char *dest) {
+int handleRegister(char *info, char *dest) {
   int number;
 
   strcpy(dest, REGISTER_RESPONSE);
@@ -17,7 +17,7 @@ void handleRegister(char *info, char *dest) {
   return 0;
 }
 
-void handleTopicList(char *info, char *dest) {
+int handleTopicList(char *info, char *dest) {
   FILE *fd = NULL;
   char path[32];
   int id, err;
@@ -85,7 +85,7 @@ void handleTopicList(char *info, char *dest) {
   return 0;
 }
 
-void handleTopicPropose(char *info, char *dest) {
+int handleTopicPropose(char *info, char *dest) {
   char topic[16], dir[256], file[BUFFERSIZE];
   int uid = 0, count = 0, err;
   struct stat st = {0};
@@ -116,7 +116,7 @@ void handleTopicPropose(char *info, char *dest) {
     return 1;
   }
 
-  if (dir1 = opendir(dir) != NULL) {
+  if ((dir1 = opendir(dir)) != NULL) {
     while ((ent = readdir(dir1)) != NULL) {
       if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0) {
         count++;
@@ -146,7 +146,7 @@ void handleTopicPropose(char *info, char *dest) {
   }
 }
 
-void handleQuestionList(char *info, char *dest) {
+int handleQuestionList(char *info, char *dest) {
   char path[32], user[64];
   char questions[100][32];
   DIR *dir, *dir2;
@@ -236,5 +236,5 @@ void handleQuestionList(char *info, char *dest) {
     }
   }
   strcat(dest, "\n");
-  return 0
+  return 0;
 }

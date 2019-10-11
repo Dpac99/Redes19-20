@@ -11,15 +11,15 @@ void sigHandler(int _) {
 }
 
 // Request Handlers
-void generalHandler(char *buffer) {
+int udpHandler(char *buffer) {
   int size = strlen(buffer);
   char command[4], info[size - 3];
   int i;
 
-  if (buffer[size - 1] != "\n") {
+  if (buffer[size - 1] != '\n') {
     memset(buffer, 0, BUFFERSIZE);
     strcpy(buffer, ERROR);
-    return;
+    return 0;
   }
 
   for (i = 0; i < size; i++) {
@@ -34,22 +34,53 @@ void generalHandler(char *buffer) {
   memset(buffer, 0, BUFFERSIZE);
 
   if (strcmp(command, REGISTER) == 0) {
-    handleRegister(info, buffer);
+    return handleRegister(info, buffer);
   } else if (strcmp(command, TOPIC_LIST) == 0) {
-    handleTopicList(info, buffer);
+    return handleTopicList(info, buffer);
   } else if (strcmp(command, TOPIC_PROPOSE) == 0) {
-    handleTopicPropose(info, buffer);
+    return handleTopicPropose(info, buffer);
   } else if (strcmp(command, QUESTION_LIST) == 0) {
-    handleQuestionList(info, buffer);
-  } else if (strcmp(command, GET_QUESTION) == 0) {
-    handleGetQuestion(info, buffer);
-  } else if (strcmp(command, SUBMIT_QUESTION) == 0) {
-    handleSubmitQuestion(info, buffer);
-  } else if (strcmp(info, SUBMIT_ANSWER) == 0) {
-    handleSubmitAnswer(info, buffer);
+    return handleQuestionList(info, buffer);
   } else {
     strcpy(buffer, ERROR);
   }
+
+  return 0;
+}
+
+int tcpHandler(char *buffer) {
+  int size = strlen(buffer);
+  char command[4], info[size - 3];
+  int i;
+
+  if (buffer[size - 1] != '\n') {
+    memset(buffer, 0, BUFFERSIZE);
+    strcpy(buffer, ERROR);
+    return 0;
+  }
+
+  for (i = 0; i < size; i++) {
+    if (i < 3) {
+      command[i] = buffer[i];
+    } else if (i > 3) {
+      info[i - 4] = buffer[i];
+    } else if (i == 3) {
+      command[i] = '\0';
+    }
+  }
+  memset(buffer, 0, BUFFERSIZE);
+
+  if (strcmp(command, GET_QUESTION) == 0) {
+    return handleGetQuestion(info, buffer);
+  } else if (strcmp(command, SUBMIT_QUESTION) == 0) {
+    return handleSubmitQuestion(info, buffer);
+  } else if (strcmp(info, SUBMIT_ANSWER) == 0) {
+    // return handleSubmitAnswer(info, buffer);
+  } else {
+    strcpy(buffer, ERROR);
+  }
+
+  return 0;
 }
 
 // Main
@@ -195,7 +226,7 @@ int main() {
                   service, sizeof service, 0);
       printf("Received: %s from[%s:%s]\n", buffer, host, service);
 
-      handleUDP(buffer);
+      int err = udpHandler(buffer);
 
       int size = strlen(buffer);
 
@@ -209,6 +240,14 @@ int main() {
         close(udp_fd);
         if (flag)
           printf("Error with sendto: %d\n", errno);
+        exit(flag);
+      }
+
+      if (err != 0) {
+        close(tcp_fd);
+        close(udp_fd);
+        if (flag)
+          printf("Error with handlers");
         exit(flag);
       }
     }
@@ -246,6 +285,8 @@ int main() {
 
           printf("Received: %s\n", buffer2);
 
+          int err = tcpHandler(buffer2);
+
           ptr = &buffer2[0];
           while (n > 0) {
             if ((nsent = write(resp_fd, ptr, n)) <= 0) {
@@ -257,6 +298,12 @@ int main() {
             }
             n -= nsent;
             ptr += nsent;
+          }
+
+          if (err > 0) {
+            close(resp_fd);
+            close(udp_fd);
+            exit(flag);
           }
         }
       }
