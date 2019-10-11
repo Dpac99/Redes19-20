@@ -34,12 +34,13 @@
 
 #define BUFFER_SIZE				 2048
 #define COMMAND_SIZE			 64
+#define TOPIC_SIZE				 10
 #define VALID					 1
 #define INVALID				 	 0
 
 struct User{
 	int userId;
-	int selected_topic;		
+	char *selected_topic;		
 	char *selected_question;
 	char **topics;
 };
