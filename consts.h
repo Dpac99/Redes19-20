@@ -22,29 +22,29 @@
 
 
 // UDP
-#define REGISTER "REG"
-#define REGISTER_RESPONSE "RGR "
-#define TOPIC_LIST "LTP"
-#define TOPIC_LIST_RESPONSE "LTR "
-#define TOPIC_PROPOSE "PTP"
-#define TOPIC_PROPOSE_RESPONSE "PTR "
-#define QUESTION_LIST "LQU"
-#define QUESTION_LIST_RESPONSE "LQR "
+// #define REGISTER "REG"
+// #define REGISTER_RESPONSE "RGR "
+// #define TOPIC_LIST "LTP"
+// #define TOPIC_LIST_RESPONSE "LTR "
+// #define TOPIC_PROPOSE "PTP"
+// #define TOPIC_PROPOSE_RESPONSE "PTR "
+// #define QUESTION_LIST "LQU"
+// #define QUESTION_LIST_RESPONSE "LQR "
 
 // TCP
-#define GET_QUESTION "GQU"
-#define GET_QUESTION_RESPONSE "QGR "
-#define SUBMIT_QUESTION "QUS"
-#define SUBMIT_QUESTION_RESPONSE "QUR "
-#define SUBMIT_ANSWER "ANS"
-#define SUBMIT_ANSWER_RESPONSE "ANR "
+// #define GET_QUESTION "GQU"
+// #define GET_QUESTION_RESPONSE "QGR "
+// #define SUBMIT_QUESTION "QUS"
+// #define SUBMIT_QUESTION_RESPONSE "QUR "
+// #define SUBMIT_ANSWER "ANS"
+// #define SUBMIT_ANSWER_RESPONSE "ANR "
 
 // Status codes
-#define OK "OK\n\0"
-#define NOK "NOK\n\0"
-#define DUP "DUP\n\0"
-#define ERROR "ERR\n\0"
-#define END_OF_FILE "EOF\n\0"
+// #define OK "OK\n\0"
+// #define NOK "NOK\n\0"
+// #define DUP "DUP\n\0"
+// #define ERROR "ERR\n\0"
+// #define END_OF_FILE "EOF\n\0"
 #define FULL "FUL\n\0"
 
 // Other info
@@ -58,10 +58,10 @@
 #define IMG_DATA "IMG_DATA.txt"
 #define ANS_DATA "ANS_DATA.txt"
 
-#define BUFFER_SIZE				 	2048
-#define COMMAND_SIZE			 	64
-#define VALID					 	1
-#define INVALID				 	 	0
+// #define BUFFER_SIZE				 	2048
+// #define COMMAND_SIZE			 	64
+// #define VALID					 	1
+// #define INVALID				 	 	0
 
 //Commands
 #define REGISTER 				 "REG"
@@ -98,6 +98,7 @@ struct User{
 	char *selected_topic;		
 	char *selected_question;
 	char **topics;
+	int num_topics;
 };
 
 #endif

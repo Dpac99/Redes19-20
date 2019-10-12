@@ -30,7 +30,7 @@ void handleLTR(char *buffer, struct User *user){
 	int count = 0, err = 0;
 
 	topic = strtok(buffer, " ");
-	if( strcmp(topic, TOPIC_LIST_RESPONSE) != 0){					//Checks if the 1st word is 'LTR'
+	if(strcmp(topic, TOPIC_LIST_RESPONSE) != 0){					//Checks if the 1st word is 'LTR'
 		printf("Error receiving answer from server.\n");
 		err = 1;
 		return;
@@ -42,10 +42,10 @@ void handleLTR(char *buffer, struct User *user){
 		err = 1;
 	}
 
-	if(strcmp(topic, "0\n")){										//Checks if there are available topics
+	if(strcmp(topic, "0\n") == 0){										//Checks if there are available topics
 		n_topics = atoi(topic);
 
-		if( msg_size != 5){
+		if(msg_size != 6){
 			err = 1;
 		}
 		else if((topic = strtok(NULL, " ")) != NULL){				//If so, checks if the protocol msg ends correctly.
@@ -53,6 +53,7 @@ void handleLTR(char *buffer, struct User *user){
 		}
 		else{
 			printf("No available topics.\n");
+			return;
 		}
 	}
 
@@ -124,8 +125,10 @@ void handleLTR(char *buffer, struct User *user){
 
 	else{
 		for(i = 0; i < n_topics; i++){
-			printf("%d. %s\n", i+1, topic, token);
+			printf("%d. %s - %s\n", i+1, topic, token);
 		}
+		user->num_topics = n_topics;
+		printf("\nNUM_TOPICS: %d\n", user->num_topics);
 	}
 
 	memset(buffer, 0, BUFFER_SIZE);
