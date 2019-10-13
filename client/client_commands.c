@@ -90,7 +90,7 @@ void topicSelect(char *buffer, int flag, struct User *user){		//TODO: confirmar 
 
 int topicPropose(char *buffer, struct User *user){					//TODO: confirmar se e preciso fazer free do topic
 	char *token;
-	int num, buffer_size;
+	int buffer_size;
 	char* topic;
 
 	buffer_size = strlen(buffer);

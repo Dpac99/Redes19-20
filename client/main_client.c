@@ -1,14 +1,14 @@
 #include "client_commands.h"
 #include "client_handlers.h"
 #include "consts.h"
+#include "helpers.h"
 
 void parseArgs(int argc, char *argv[], char *port, char *server_IP);
 int readCommand(char *buffer);
 struct User *initUser();
-void communicateUDP(char *buffer, int fd, struct addrinfo *res,
-                    struct sockaddr_in addr);
+int communicateUDP(char *buffer, int fd, struct addrinfo *res, struct sockaddr_in addr);
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]){
 
   // INITIALIZATION OF GLOBAL VARIABLES
   int udp_fd, n, size, status;
@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
   struct addrinfo hints, *res;
   struct sockaddr_in addr;
   struct User *user = initUser();
-  char buffer[256], *port, *server_IP, command[COMMAND_SIZE];
+  char buffer[BUFFER_SIZE], commandArgs[COMMANDS][ARG_SIZE], *port, *server_IP, command[COMMAND_SIZE];
 
   port = (char *)malloc(16);
   if (port == NULL) {
@@ -37,12 +37,14 @@ int main(int argc, char *argv[]) {
 
   // Checks if any of the '-n' or '-p' flags was used
   parseArgs(argc, argv, port, server_IP);
+
   if (strlen(server_IP) == 0)
     server_IP = NULL;
 
+
   n = getaddrinfo(server_IP, port, &hints, &res);
   if (n != 0) {
-    printf("Server: %s . Port: %s\n", server_IP, port);
+    printf("Error connecting to server. Server: %s . Port: %s\n", server_IP, port);
     exit(1);
   }
 
@@ -64,7 +66,8 @@ int main(int argc, char *argv[]) {
       if (status == VALID) {
         communicateUDP(buffer, udp_fd, res, addr);
         handleRGR(buffer, user);
-      } else {
+      } 
+      else {
         memset(buffer, 0, BUFFER_SIZE);
       }
     }
@@ -73,9 +76,12 @@ int main(int argc, char *argv[]) {
              (strcmp(command, "tl") == 0)) {
       status = topicList(buffer, user);
       if (status == VALID) {
-        communicateUDP(buffer, udp_fd, res, addr);
-        handleLTR(buffer, user);
-      } else {
+        if(communicateUDP(buffer, udp_fd, res, addr)){
+          parseCommand(buffer, commandArgs);
+          handleLTR(commandArgs, user);
+        }
+      } 
+      else {
         memset(buffer, 0, BUFFER_SIZE);
       }
     }
@@ -174,7 +180,7 @@ int readCommand(char *buffer) {
   return i;
 }
 
-void communicateUDP(char *buffer, int fd, struct addrinfo *res,
+int communicateUDP(char *buffer, int fd, struct addrinfo *res,
                     struct sockaddr_in addr) {
   int nwrite, nread, size;
   socklen_t addrlen;
@@ -185,15 +191,23 @@ void communicateUDP(char *buffer, int fd, struct addrinfo *res,
   if (nwrite == -1) {
     exit(1);
   }
+
   memset(buffer, 0, BUFFER_SIZE);
   addrlen = sizeof(addr);
 
-  nread =
-      recvfrom(fd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
+  nread = recvfrom(fd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
   if (nread == -1) {
     exit(1);
   }
-  return;
+
+  size = strcspn(buffer, "\n");
+  if( nread != (size + 1) ){
+    printf("Error receiving message from server. New line character is mandatory.\n");
+    return INVALID;
+  }
+
+  buffer[size] = '\0';
+  return VALID;
 }
 
 struct User *initUser() {

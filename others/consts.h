@@ -58,14 +58,14 @@
 #define IMG_DATA "IMG_DATA.txt"
 #define ANS_DATA "ANS_DATA.txt"
 
-#define BUFFER_SIZE				 	2048
-#define COMMAND_SIZE			 	64
-#define VALID					 	1
-#define INVALID				 	 	0
 
 #define BUFFER_SIZE				 	2048
 #define COMMAND_SIZE			 	64
+#define COMMANDS					128
+#define ARG_SIZE					64
 #define TOPIC_SIZE				 	10
+#define MAX_TOPICS					99
+#define USER_ID_SIZE				5
 #define VALID					 	1
 #define INVALID				 	 	0
 #define REGISTER_REG_LENGTH		 	6	// after register/reg: " *****"
@@ -77,6 +77,7 @@ struct User{
 	char *selected_topic;		
 	char *selected_question;
 	char **topics;
+	int num_topics;
 };
 
 #endif

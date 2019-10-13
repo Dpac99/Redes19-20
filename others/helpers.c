@@ -18,10 +18,64 @@ int comparator(const void *p, const void *q) {
   return (int)(p_s.st_mtim.tv_sec - q_s.st_mtim.tv_sec);
 }
 
+<<<<<<< HEAD:others/helpers.c
 int sizeOfNumber(int n) {
   if (n < 10) {
     return 1;
   } else {
     return 1 + sizeOfNumber(n / 10);
   }
+=======
+int parseCommand(char *buffer, char *commandArgs[]){
+  char *token;
+  int i = 0;
+  token = strtok(buffer, " ");
+  
+  while((token != NULL) && (i < COMMANDS)){
+    if(strlen(token) <= ARG_SIZE){
+      commandArgs[i] = token;
+      i++;
+      token = strtok(NULL, " ");
+    }
+    else{
+      return INVALID;
+    }
+  }
+
+  if((i >= COMMANDS) && (token != NULL)){
+    return INVALID;
+  }
+  else{
+    return VALID;
+  }
+}
+
+int isValidTopic(char *topic){
+  if(strlen(topic) <= TOPIC_SIZE){
+    return VALID;
+  }
+  else{
+     return INVALID; 
+  }
+}
+
+int isValidId(char *userId){
+  if(strlen(userId) == USER_ID_SIZE){
+    return VALID;
+  }
+  else{
+     return INVALID; 
+  }
+}
+
+int isnumber(char *number){
+  int i, size;
+  size = strlen(number);
+	for(i = 0; i < size; i++){
+    if (!isdigit(number[i]) && (number[i] != '\0')){
+      return INVALID;
+    }
+  }
+  return atoi(number);
+>>>>>>> 332110c10ec29d78c06da6d51b4a340f4bb061b7:helpers.c
 }
