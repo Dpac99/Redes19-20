@@ -3,5 +3,6 @@
 
 int max(int x, int y);
 int comparator(const void *p, const void *q);
+int sizeOfNumber(int a);
 
 #endif

@@ -17,3 +17,11 @@ int comparator(const void *p, const void *q) {
 
   return (int)(p_s.st_mtim.tv_sec - q_s.st_mtim.tv_sec);
 }
+
+int sizeOfNumber(int n) {
+  if (n < 10) {
+    return 1;
+  } else {
+    return 1 + sizeOfNumber(n / 10);
+  }
+}

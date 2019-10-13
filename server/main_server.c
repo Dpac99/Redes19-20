@@ -1,5 +1,5 @@
-#include "consts.h"
-#include "helpers.h"
+#include "../others/consts.h"
+#include "../others/helpers.h"
 #include "tcp_server_handlers.h"
 #include "udp_server_handlers.h"
 
@@ -35,7 +35,7 @@ int udpHandler(char *buffer) {
 
   if (buffer[size - 1] != '\n') {
     memset(buffer, 0, BUFFER_SIZE);
-    strcpy(buffer, ERROR);
+    sprintf(buffer, "%s\n", ERROR);
     return 0;
   }
 
@@ -59,7 +59,7 @@ int udpHandler(char *buffer) {
   } else if (strcmp(command, QUESTION_LIST) == 0) {
     return handleQuestionList(info, buffer);
   } else {
-    strcpy(buffer, ERROR);
+    sprintf(buffer, "%s\n", ERROR);
   }
 
   return 0;
@@ -72,7 +72,7 @@ int tcpHandler(char *buffer) {
 
   if (buffer[size - 1] != '\n') {
     memset(buffer, 0, BUFFER_SIZE);
-    strcpy(buffer, ERROR);
+    sprintf(buffer, "%s\n", ERROR);
     return 0;
   }
 
@@ -92,9 +92,9 @@ int tcpHandler(char *buffer) {
   } else if (strcmp(command, SUBMIT_QUESTION) == 0) {
     return handleSubmitQuestion(info, buffer);
   } else if (strcmp(info, SUBMIT_ANSWER) == 0) {
-    // return handleSubmitAnswer(info, buffer);
+    return handleSubmitAnswer(info, buffer);
   } else {
-    strcpy(buffer, ERROR);
+    sprintf(buffer, "%s\n", ERROR);
   }
 
   return 0;
@@ -194,10 +194,10 @@ int main(int argc, char *argv[]) {
         freeaddrinfo(i);
         close(udp_fd);
         if (tcp_fd > 0) {
-          close(udp_fd);
+          close(tcp_fd);
         }
         if (flag)
-          printf("Error with bind tcp\n");
+          printf("Error with bind tcp: %d\n", errno);
         exit(flag);
       }
 
@@ -251,7 +251,7 @@ int main(int argc, char *argv[]) {
 
       getnameinfo((struct sockaddr *)&addr, addrlen, host, sizeof(host),
                   service, sizeof service, 0);
-      printf("Received: %s from[%s:%s]\n", buffer, host, service);
+      printf("Received: %sfrom[%s:%s]\n\n", buffer, host, service);
 
       int err = udpHandler(buffer);
 
@@ -269,6 +269,7 @@ int main(int argc, char *argv[]) {
           printf("Error with sendto: %d\n", errno);
         exit(flag);
       }
+      write(1, "\n", 1);
 
       if (err != 0) {
         close(tcp_fd);
@@ -280,18 +281,14 @@ int main(int argc, char *argv[]) {
     }
 
     if (FD_ISSET(tcp_fd, &rfds)) {
+
       n = 0;
       nsent = 0;
       nread = 0;
       addrlen = sizeof(addr);
-      resp_fd = accept(tcp_fd, (struct sockaddr *)&addr, &addrlen);
-      if (resp_fd == -1) {
-        close(tcp_fd);
-        close(udp_fd);
-        if (flag)
-          printf("Error with accept tcp\n");
-        exit(flag);
-      }
+      do
+        resp_fd = accept(tcp_fd, (struct sockaddr *)&addr, &addrlen);
+      while (resp_fd == -1 && errno == EINTR);
 
       if ((pid = fork()) == -1) {
         close(tcp_fd);
@@ -299,44 +296,57 @@ int main(int argc, char *argv[]) {
         if (flag)
           printf("Error with fork\n");
         exit(flag);
-      } else if (pid == 0) { // Child process
+      }
+
+      else if (pid == 0) { // Child process
         close(tcp_fd);
-        while ((n = read(resp_fd, buffer2, 128)) != 0) {
+        if (resp_fd == -1) {
+          if (flag)
+            printf("Error with accept tcp\n");
+          exit(flag);
+        }
+        while ((n = read(resp_fd, buffer2, BUFFER_SIZE)) > 0) {
           if (n == -1) {
             close(resp_fd);
-            close(udp_fd);
             if (flag)
-              printf("Error with read\n");
-            exit(flag);
-          }
-
-          printf("Received: %s\n", buffer2);
-
-          int err = tcpHandler(buffer2);
-
-          ptr = &buffer2[0];
-          while (n > 0) {
-            if ((nsent = write(resp_fd, ptr, n)) <= 0) {
-              close(resp_fd);
-              close(udp_fd);
-              if (flag)
-                printf("Error with write\n");
-              exit(flag);
-            }
-            n -= nsent;
-            ptr += nsent;
-          }
-
-          if (err > 0) {
-            close(resp_fd);
-            close(udp_fd);
+              printf("Error with read: %d\n", errno);
             exit(flag);
           }
         }
+
+        printf("Received: %s\n", buffer2);
+
+        tcpHandler(buffer2);
+        n = strlen(buffer2);
+
+        ptr = &buffer2[0];
+        printf(buffer2);
+
+        while (n > 0) {
+          if ((nsent = write(resp_fd, ptr, n)) <= 0) {
+            close(resp_fd);
+            if (flag)
+              printf("Error with write: %d\n", errno);
+            exit(flag);
+          }
+          n -= nsent;
+          ptr += nsent;
+        }
+
+        printf("SENT: %s", buffer2);
+
+        close(resp_fd);
+        exit(0);
+      } else {
+        int r;
+        do
+          r = close(resp_fd);
+        while (r == -1 && errno == EINTR);
       }
     }
   }
-  close(resp_fd);
+
+  close(tcp_fd);
   close(udp_fd);
   return 0;
 }
