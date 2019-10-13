@@ -87,6 +87,7 @@ int main(int argc, char *argv[]){
     }
 
     else if (strcmp(command, "topic_select") == 0) {
+      parseCommand(buffer, commandArgs);
       topicSelect(buffer, 0, user);
       memset(buffer, 0, BUFFER_SIZE);
     }
@@ -117,21 +118,22 @@ int main(int argc, char *argv[]){
     }
 
     else if (strcmp(command, "question_get") == 0) {
-      questionGet(buffer, 0);
+      questionGet(buffer, 0, user);
     }
 
     else if (strcmp(command, "qg") == 0) {
-      questionGet(buffer, 1);
+      questionGet(buffer, 1, user);
     }
 
     else if ((strcmp(command, "question_submit") == 0) ||
              (strcmp(command, "qs") == 0)) {
-      questionSubmit(buffer);
+      parseCommand(buffer, commandArgs);
+      status = questionSubmit(buffer, user, commandArgs);
     }
 
     else if ((strcmp(command, "answer_submit") == 0) ||
              (strcmp(command, "as") == 0)) {
-      answerSubmit(buffer);
+      status = answerSubmit(buffer);
     }
 
     else {

@@ -7,5 +7,6 @@ int parseCommand(char *buffer, char *commandArgs[]);
 int isValidTopic(char *topic);
 int isValidId(char *userId);
 int isnumber(char *number);
+bool fileExists(char *filename);
 
 #endif

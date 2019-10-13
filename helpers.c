@@ -70,3 +70,8 @@ int isnumber(char *number){
   }
   return atoi(number);
 }
+
+bool fileExists(char *filename) {
+  struct stat buff;
+  return (stat(filename, &buff) == 0);
+}
