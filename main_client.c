@@ -100,7 +100,8 @@ int main(int argc, char *argv[]){
              (strcmp(command, "tp") == 0)) {
       status = topicPropose(buffer, user);
       if (status == VALID) {
-        // TODO: implement communication and handler
+        communicateUDP(buffer, udp_fd, res, addr);
+        handlePTR(buffer);
       } else {
         memset(buffer, 0, BUFFER_SIZE);
       }
@@ -223,13 +224,21 @@ struct User *initUser() {
     exit(1);
   }
 
-  user->topics = (char **)malloc(99 * sizeof(char *));
+  user->topics = (char **)malloc(MAX_TOPICS * sizeof(char *));
+  if (user->topics == NULL) {
+    printf("Error allocating memory.\n");
+    exit(1);
+  }
+
+  user->questions = (char **)malloc(MAX_QUESTIONS * sizeof(char *));
   if (user->topics == NULL) {
     printf("Error allocating memory.\n");
     exit(1);
   }
 
   user->userId = -1;
+  user->num_topics = 0;
+  user->num_questions = 0;
   
   user->selected_topic = (char*)malloc(10 * sizeof(char));
 	if( user->selected_topic == NULL){
@@ -237,9 +246,15 @@ struct User *initUser() {
 		exit(1);
 	}
 
-  for (i = 0; i < 99; i++) {
-    user->topics[i] = (char *)malloc(10 * sizeof(char));
+  for (i = 0; i < MAX_TOPICS; i++) {
+    user->topics[i] = (char *)malloc(TOPIC_SIZE * sizeof(char));
     if (user->topics[i] == NULL) {
+      printf("Error allocating memory.\n");
+      exit(1);
+    }
+
+    user->questions[i] = (char *)malloc(TOPIC_SIZE * sizeof(char));
+    if (user->questions[i] == NULL) {
       printf("Error allocating memory.\n");
       exit(1);
     }

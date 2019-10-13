@@ -68,5 +68,5 @@ int isnumber(char *number){
       return INVALID;
     }
   }
-  return atoi(number);
+  return VALID;
 }
