@@ -65,6 +65,7 @@
 #define ARG_SIZE					64
 #define TOPIC_SIZE				 	10
 #define MAX_TOPICS					99
+#define MAX_QUESTIONS				99
 #define USER_ID_SIZE				5
 #define VALID					 	1
 #define INVALID				 	 	0
@@ -77,7 +78,9 @@ struct User{
 	char *selected_topic;		
 	char *selected_question;
 	char **topics;
+	char **questions;
 	int num_topics;
+	int num_questions;
 };
 
 #endif
