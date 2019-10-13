@@ -17,34 +17,6 @@
 #include <unistd.h>
 
 #define PORT "58053"
-
-// Commands
-
-
-// UDP
-// #define REGISTER "REG"
-// #define REGISTER_RESPONSE "RGR "
-// #define TOPIC_LIST "LTP"
-// #define TOPIC_LIST_RESPONSE "LTR "
-// #define TOPIC_PROPOSE "PTP"
-// #define TOPIC_PROPOSE_RESPONSE "PTR "
-// #define QUESTION_LIST "LQU"
-// #define QUESTION_LIST_RESPONSE "LQR "
-
-// TCP
-// #define GET_QUESTION "GQU"
-// #define GET_QUESTION_RESPONSE "QGR "
-// #define SUBMIT_QUESTION "QUS"
-// #define SUBMIT_QUESTION_RESPONSE "QUR "
-// #define SUBMIT_ANSWER "ANS"
-// #define SUBMIT_ANSWER_RESPONSE "ANR "
-
-// Status codes
-// #define OK "OK\n\0"
-// #define NOK "NOK\n\0"
-// #define DUP "DUP\n\0"
-// #define ERROR "ERR\n\0"
-// #define END_OF_FILE "EOF\n\0"
 #define FULL "FUL\n\0"
 
 // Other info
@@ -58,10 +30,6 @@
 #define IMG_DATA "IMG_DATA.txt"
 #define ANS_DATA "ANS_DATA.txt"
 
-// #define BUFFER_SIZE				 	2048
-// #define COMMAND_SIZE			 	64
-// #define VALID					 	1
-// #define INVALID				 	 	0
 
 //Commands
 #define REGISTER 				 "REG"
@@ -78,15 +46,19 @@
 #define SUBMIT_QUESTION_RESPONSE "QUR"
 #define SUBMIT_ANSWER 			 "ANS"
 #define SUBMIT_ANSWER_RESPONSE 	 "ANR"
-#define OK 						 "OK\n"
-#define NOK 					 "NOK\n" 
+#define OK 						 "OK"
+#define NOK 					 "NOK" 
 #define DUP 					 "DUP"
 #define ERROR 					 "ERR"
 #define END_OF_FILE 			 "EOF"
 
 #define BUFFER_SIZE				 	2048
 #define COMMAND_SIZE			 	64
+#define COMMANDS					128
+#define ARG_SIZE					64
 #define TOPIC_SIZE				 	10
+#define MAX_TOPICS					99
+#define USER_ID_SIZE				5
 #define VALID					 	1
 #define INVALID				 	 	0
 #define REGISTER_REG_LENGTH		 	6	// after register/reg: " *****"

@@ -1,10 +1,10 @@
 #include "client_handlers.h"
+#include "helpers.h"
 
 //PROTOCOL RESPONSE HANDLERS
 
 void handleRGR(char *buffer, struct User *user){
 	char *token;
-	printf("Received: '%s' from server\n", buffer);
 	token = strtok(buffer, " ");
 
 	if (strcmp(token, REGISTER_RESPONSE) == 0){
@@ -23,114 +23,49 @@ void handleRGR(char *buffer, struct User *user){
 	return;
 }
 
-void handleLTR(char *buffer, struct User *user){
-	char *topic;
+int handleLTR(char *commandArgs[], struct User *user){
 	char *token;
-	int n_topics, i, msg_size = strlen(buffer);
-	int count = 0, err = 0;
+	char UserIds[MAX_TOPICS];
+	int n_topics, i, err = 0;
 
-	topic = strtok(buffer, " ");
-	if(strcmp(topic, TOPIC_LIST_RESPONSE) != 0){					//Checks if the 1st word is 'LTR'
-		printf("Error receiving answer from server.\n");
-		err = 1;
-		return;
-	}
-
-	topic = strtok(NULL, " ");
-	if(topic == NULL){												//Checks if the msg doesn't end after the 'LTR' protocol code
-		printf("Error receiving answer from server.\n");
-		err = 1;
-	}
-
-	if(strcmp(topic, "0\n") == 0){										//Checks if there are available topics
-		n_topics = atoi(topic);
-
-		if(msg_size != 6){
-			err = 1;
-		}
-		else if((topic = strtok(NULL, " ")) != NULL){				//If so, checks if the protocol msg ends correctly.
-			err = 1;
-		}
-		else{
-			printf("No available topics.\n");
-			return;
-		}
-	}
-
-	else if((n_topics = atoi(topic) == 0)){							//Checks if the 'N' parameter is a valid integer
-		err = 1;
-	}
-
-	else{															//If so, adds the number of characters of n_topics.
-		count += strlen(topic);
-	}
-
-	if((!err) && (n_topics > 0)){									// If there are topics to be shown:
-
-		topic = strtok(NULL, " ");
-		if(topic == NULL){											
-			printf("Error receiving answer from server.\n");
-			err = 1;
-		}
+	if((strcmp(commandArgs[0], TOPIC_LIST_RESPONSE) == 0) && (0 < isnumber(commandArgs[1]) <= MAX_TOPICS)){
+		n_topics = atoi(commandArgs[1]);
 
 		for(i = 0; i < n_topics; i++){
-
-			if((topic != NULL) && (!strcmp(topic, "\n"))){		
-				token = strtok(topic, ":");								//Now further separates 'topic:userId' 
-				if(strlen(token) > 10){									//Checks if topic length is greater than 10 caracthers
-					err = 1;
-					break;
-				}
-
+			token = strtok(commandArgs[i + 2], ":");
+			if(isValidTopic(token)){
 				token = strtok(NULL, ":");
-				if( (atoi(token) == 0) || (strlen(token) != 5) ){		//checks if userId is not a 5 character integer
+				if(isnumber(token) && isValidId(token)){
+					strcpy(user->topics[i], commandArgs[i+2]); 
+					UserIds[i] = atoi(token);				
+				}
+				else{
 					err = 1;
-					break;
-				}
-				if(!err){
-					strcpy(user->topics[i], token);
-					count += strlen(topic);
-					topic = strtok(NULL, " ");
 				}
 			}
-
-			if((topic == NULL) || (strcmp(topic, "\n")) ){				
+			else{
 				err = 1;
-				break;
 			}
-
-			if(err){
-				break;
-			}
-			
-			topic = strtok(NULL, " ");
-			if((topic == NULL) && (i != (n_topics - 1)) ){
-				err = 1;
-				break;
+			if( err == 1){
+			 	break;
 			}	
 		}
 	}
-	
-	if( err || (!(strcmp(topic, "\n"))) ) {							//If there's an error or the message hasn't ended after reading n_topics
-		printf("Error receiving message from server.\n");
+	else{
+		err = 1;
+	}
 
+	if(err == 1){
+		printf("Error receiving message from server.\n");
 		for(i = 0; i < n_topics; i++){
 			memset(user->topics[i], 0, TOPIC_SIZE);
 		}
+		return INVALID;
+	}
+	for(i = 0; i < n_topics; i++){
+		printf("Topic %d: %s. Proposed by user %d.\n", i+1, user->topics[i], UserIds[i]);
+		memset(commandArgs[i], 0, ARG_SIZE);
 	}
 
-	else if( (count + n_topics + 4) != msg_size ){
-		printf("Error receiving message from server.\n");			//If there's more ' ' than expected 
-	}
-
-	else{
-		for(i = 0; i < n_topics; i++){
-			printf("%d. %s - %s\n", i+1, topic, token);
-		}
-		user->num_topics = n_topics;
-		printf("\nNUM_TOPICS: %d\n", user->num_topics);
-	}
-
-	memset(buffer, 0, BUFFER_SIZE);
-	return;
+	return VALID;
 }
