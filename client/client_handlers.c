@@ -68,6 +68,9 @@ int handleLTR(char *commandArgs[], struct User *user){
 	
 	for(i = 0; i < n_topics; i++){
 		printf("Topic %d: %s.	Proposed by user %s.\n", i+1, user->topics[i], UserIds[i]);
+	}
+
+	for (i = 0; i < COMMANDS; i++) {
 		memset(commandArgs[i], 0, ARG_SIZE);
 	}
 	user->num_topics = n_topics;

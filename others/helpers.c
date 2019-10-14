@@ -31,16 +31,16 @@ int parseCommand(char *buffer, char *commandArgs[]) {
   int i = 0;
   token = strtok(buffer, " ");
 
+  i=0;
   while ((token != NULL) && (i < COMMANDS)) {
     if (strlen(token) <= ARG_SIZE) {
-      commandArgs[i] = token;
+      strcpy(commandArgs[i], token);
       i++;
       token = strtok(NULL, " ");
     } else {
       return INVALID;
     }
   }
-
   if ((i >= COMMANDS) && (token != NULL)) {
     return INVALID;
   } else {
