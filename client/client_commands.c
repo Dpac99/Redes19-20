@@ -114,7 +114,7 @@ void topicSelect(char *buffer, int flag, struct User *user){
 	return;
 }
 
-int topicPropose(char *buffer, struct User *user){					
+int topicPropose(char *buffer, struct User *user, char aux_topic[]){					
 	char *token, *topic;
 	int buffer_size;
 
@@ -135,9 +135,9 @@ int topicPropose(char *buffer, struct User *user){
 	if(strlen(topic) > TOPIC_SIZE || (token = strtok(NULL, " ")) != NULL)
 		printf("Invalid command format.\n");
 
-	strcpy(user->selected_topic, topic);
+	strcpy(aux_topic, topic);
 	memset(buffer, 0, BUFFER_SIZE);
-	sprintf(buffer, "%s %s\n", TOPIC_PROPOSE, user->selected_topic);
+	sprintf(buffer, "%s %d %s\n", TOPIC_PROPOSE, user->userId, aux_topic);
 
 	return VALID;
 }
@@ -153,10 +153,15 @@ int questionList(char *buffer, struct User *user){
 	if((token = strtok(buffer, " ")) != NULL){
 		printf("Invalid command format.\n");
 		return INVALID;
+	}	
+
+	if(user->selected_topic == NULL){
+		printf("Please select a topic first.\n");
+		return INVALID;
 	}
 
 	memset(buffer, 0, BUFFER_SIZE);
-	sprintf(buffer, "%s\n", QUESTION_LIST);
+	sprintf(buffer, "%s %s\n", QUESTION_LIST, user->selected_topic);
 	return VALID;
 }
 

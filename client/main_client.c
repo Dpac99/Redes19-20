@@ -17,8 +17,8 @@ int main(int argc, char *argv[]) {
   struct addrinfo hints, *res;
   struct sockaddr_in addr;
   struct User *user = initUser();
-  char buffer[BUFFER_SIZE], commandArgs[COMMANDS][ARG_SIZE], *port, *server_IP,
-      command[COMMAND_SIZE];
+  char buffer[BUFFER_SIZE], commandArgs[COMMANDS][ARG_SIZE], *port, *server_IP, command[COMMAND_SIZE];
+  char topic[TOPIC_SIZE];
 
   port = (char *)malloc(16);
   if (port == NULL) {
@@ -99,10 +99,10 @@ int main(int argc, char *argv[]) {
 
     else if ((strcmp(command, "topic_propose") == 0) ||
              (strcmp(command, "tp") == 0)) {
-      status = topicPropose(buffer, user);
+      status = topicPropose(buffer, user, topic);
       if (status == VALID) {
         communicateUDP(buffer, udp_fd, res, addr);
-        handlePTR(buffer, user);
+        handlePTR(buffer, user, topic);
       } else {
         memset(buffer, 0, BUFFER_SIZE);
       }
@@ -112,7 +112,10 @@ int main(int argc, char *argv[]) {
              (strcmp(command, "ql") == 0)) {
       status = questionList(buffer, user);
       if (status == VALID) {
-        // TODO: implement communication and handler
+        if (communicateUDP(buffer, udp_fd, res, addr)) {
+          parseCommand(buffer, commandArgs);
+          handleLQR(commandArgs, user);
+        }
       } else {
         memset(buffer, 0, BUFFER_SIZE);
       }
