@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <stdbool.h> 
+#include <ctype.h>
 
 #define PORT "58053"
 

@@ -1,5 +1,5 @@
 #include "client_commands.h"
-#include "../others/helpers.h"
+
 
 // COMMAND HANDLING
 
@@ -205,16 +205,13 @@ void questionGet(char *buffer, int flag, struct User *user){	//TODO: get questio
 
 int questionSubmit(char *buffer, struct User *user, char *commandArgs[]){	//TODO: clean code and check number of spaces
 	char *aux;
-	int buffer_size;
 	char *question;
 	char *text_file;
 	char *image_file;
 	char *ext;
 	char *filename = (char*)malloc(BUFFER_SIZE * sizeof(char));
 	char *imagename = (char*)malloc(BUFFER_SIZE * sizeof(char));
-	int image_ext_size = 0;
 
-	buffer_size = strlen(buffer);
 	question = commandArgs[0];
 
 	if(question == NULL) {
@@ -238,7 +235,6 @@ int questionSubmit(char *buffer, struct User *user, char *commandArgs[]){	//TODO
 	aux = commandArgs[2];
 	if (aux != NULL) {
 		strcpy(imagename, commandArgs[2]);
-		image_ext_size = strlen(aux);
 		image_file = strtok(aux, ".");
 		ext = strtok(NULL, " ");
 		if (image_file == NULL || ext == NULL) {
@@ -250,21 +246,11 @@ int questionSubmit(char *buffer, struct User *user, char *commandArgs[]){	//TODO
 			return INVALID;
 		}
 	}
-
-	// if((buffer_size - strlen(question) - strlen(text_file) - image_ext_size) > 2 && image_ext_size == 0) {
-	// 	printf("Invalid command format.\n");
-	// 	return INVALID;
-	// } else if((buffer_size - strlen(question) - strlen(text_file) - image_ext_size) > 3) {
-	// 	printf("Invalid command format.\n");
-	// 	return INVALID;
-	// }
-
-
-
 	strcpy(user->selected_question, question);
 
 	return VALID;
 }
 
 int answerSubmit(char *buffer){
+	return VALID;
 }

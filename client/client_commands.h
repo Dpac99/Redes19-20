@@ -2,6 +2,7 @@
 #define __CLIENT_COMMANDS_H__
 
 #include "../others/consts.h"
+#include "../others/helpers.h"
 
 int registerUser(char *buffer, struct User *user);
 int topicList(char *buffer, struct User *user);

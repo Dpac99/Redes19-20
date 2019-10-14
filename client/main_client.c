@@ -12,14 +12,15 @@ int communicateUDP(char *buffer, int fd, struct addrinfo *res,
 int main(int argc, char *argv[]) {
 
   // INITIALIZATION OF GLOBAL VARIABLES
-  int udp_fd, n, size, status;
+  int udp_fd, n, status, i;
 
   struct addrinfo hints, *res;
   struct sockaddr_in addr;
-  struct User *user = initUser();
-  char buffer[BUFFER_SIZE], commandArgs[COMMANDS][ARG_SIZE], *port, *server_IP, command[COMMAND_SIZE];
+  struct User *user;
+  char buffer[BUFFER_SIZE], **commandArgs, *port, *server_IP, command[COMMAND_SIZE];
   char topic[TOPIC_SIZE];
 
+  user = initUser();
   port = (char *)malloc(16);
   if (port == NULL) {
     printf("Error allocating memory.\n");
@@ -43,6 +44,20 @@ int main(int argc, char *argv[]) {
   if (strlen(server_IP) == 0)
     server_IP = NULL;
 
+  commandArgs = (char **)malloc(COMMANDS * sizeof(char*));
+  if (commandArgs == NULL) {
+    printf("Error allocating memory.\n");
+    exit(1);
+  }
+
+  for (i = 0; i < COMMANDS; i++) {
+    commandArgs[i] = (char *)malloc(ARG_SIZE * sizeof(char));
+    if (commandArgs[i] == NULL) {
+      printf("Error allocating memory.\n");
+      exit(1);
+    }
+  }
+  
   n = getaddrinfo(server_IP, port, &hints, &res);
   if (n != 0) {
     printf("Error connecting to server. Server: %s . Port: %s\n", server_IP,
@@ -58,7 +73,7 @@ int main(int argc, char *argv[]) {
   }
 
   scanf("%s", command);
-  size = readCommand(buffer);
+  readCommand(buffer);
 
   // UDP
   while (strcmp(command, "exit") != 0) {
@@ -87,7 +102,6 @@ int main(int argc, char *argv[]) {
     }
 
     else if (strcmp(command, "topic_select") == 0) {
-      //parseCommand(buffer, commandArgs);
       topicSelect(buffer, 0, user);
       memset(buffer, 0, BUFFER_SIZE);
     }
@@ -110,6 +124,7 @@ int main(int argc, char *argv[]) {
 
     else if ((strcmp(command, "question_list") == 0) ||
              (strcmp(command, "ql") == 0)) {
+               
       status = questionList(buffer, user);
       if (status == VALID) {
         if (communicateUDP(buffer, udp_fd, res, addr)) {
@@ -147,7 +162,7 @@ int main(int argc, char *argv[]) {
     memset(buffer, 0, BUFFER_SIZE);
     memset(command, 0, COMMAND_SIZE);
     scanf("%s", command);
-    size = readCommand(buffer);
+    readCommand(buffer);
   }
   return 0;
 }
@@ -217,7 +232,7 @@ int communicateUDP(char *buffer, int fd, struct addrinfo *res,
   return VALID;
 }
 
-struct User *initUser() {
+struct User *initUser(){
   int i;
 
   struct User *user = (struct User *)malloc(sizeof(struct User));
@@ -267,6 +282,5 @@ struct User *initUser() {
       exit(1);
     }
   }
-
   return user;
 }

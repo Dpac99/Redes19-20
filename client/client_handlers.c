@@ -28,28 +28,30 @@ int handleLTR(char *commandArgs[], struct User *user){
 	char *UserIds[MAX_TOPICS][USER_ID_SIZE];
 	int n_topics, i, err = 0;
 
-	if((strcmp(commandArgs[0], TOPIC_LIST_RESPONSE) == 0) && (0 < isnumber(commandArgs[1]) <= MAX_TOPICS)){
+	if((strcmp(commandArgs[0], TOPIC_LIST_RESPONSE) == 0) && isnumber(commandArgs[1])){
 		n_topics = atoi(commandArgs[1]);
 
-		for(i = 0; i < n_topics; i++){
-			token = strtok(commandArgs[i + 2], ":");
-			if(isValidTopic(token)){
-				token = strtok(NULL, ":");
-				if(isnumber(token) && isValidId(token)){
-					strcpy(user->topics[i], commandArgs[i+2]); 
-					strcpy(UserIds[i], token);		
+		if( (0 < n_topics ) && (n_topics <= MAX_TOPICS)){
+			for(i = 0; i < n_topics; i++){
+				token = strtok(commandArgs[i + 2], ":");
+				if(isValidTopic(token)){
+					token = strtok(NULL, ":");
+					if(isnumber(token) && isValidId(token)){
+						strcpy(user->topics[i], commandArgs[i+2]); 
+						strcpy(UserIds[i], token);		
+					}
+					else
+						err = 1;
 				}
-				else{
+				else
 					err = 1;
-				}
+				if( err == 1){
+					break;
+				}	
 			}
-			else{
-				err = 1;
-			}
-			if( err == 1){
-			 	break;
-			}	
 		}
+		else
+			err = 1;
 	}
 	else{
 		err = 1;
@@ -57,7 +59,7 @@ int handleLTR(char *commandArgs[], struct User *user){
 
 	if(err == 1){
 		printf("Error receiving message from server.\n");
-		for(i = 0; i < n_topics; i++){
+		for(i = 0; i < n_topics + 2; i++){
 			memset(user->topics[i], 0, TOPIC_SIZE);
 		}
 		return INVALID;
@@ -112,5 +114,5 @@ int handlePTR(char *buffer, struct User *user, char aux_topic[]){
 }
 
 int handleLQR(char *commandArgs[], struct User *user){
-	
+	return VALID;
 }
