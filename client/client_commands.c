@@ -114,7 +114,7 @@ void topicSelect(char *buffer, int flag, struct User *user){
 	return;
 }
 
-int topicPropose(char *buffer, struct User *user){					
+int topicPropose(char *buffer, struct User *user, char aux_topic[]){					
 	char *token, *topic;
 	int buffer_size;
 
@@ -135,9 +135,9 @@ int topicPropose(char *buffer, struct User *user){
 	if(strlen(topic) > TOPIC_SIZE || (token = strtok(NULL, " ")) != NULL)
 		printf("Invalid command format.\n");
 
-	strcpy(user->selected_topic, topic);
+	strcpy(aux_topic, topic);
 	memset(buffer, 0, BUFFER_SIZE);
-	sprintf(buffer, "%s %s\n", TOPIC_PROPOSE, user->selected_topic);
+	sprintf(buffer, "%s %d %s\n", TOPIC_PROPOSE, user->userId, aux_topic);
 
 	return VALID;
 }
@@ -153,18 +153,156 @@ int questionList(char *buffer, struct User *user){
 	if((token = strtok(buffer, " ")) != NULL){
 		printf("Invalid command format.\n");
 		return INVALID;
+	}	
+
+	if(strlen(user->selected_topic) == 0){
+		printf("Please select a topic first.\n");
+		return INVALID;
 	}
 
 	memset(buffer, 0, BUFFER_SIZE);
-	sprintf(buffer, "%s\n", QUESTION_LIST);
+	sprintf(buffer, "%s %s\n", QUESTION_LIST, user->selected_topic);
 	return VALID;
 }
 
-void questionGet(char *buffer, int flag){
+void questionGet(char *buffer, int flag, struct User *user){	//TODO: get question from the question list
+	char *token;
+	int num, buffer_size;
+	char* question;
+
+	buffer_size = strlen(buffer);
+	token = strtok(buffer, " ");
+	
+	if(token == NULL) {
+		printf("Invalid command format.\n");
+		return;
+	}
+
+	if((buffer_size - strlen(token)) > 1) {
+		printf("Invalid command format.\n");
+		return;
+	}
+
+	if(flag) {	// input "qg num"
+		num = isnumber(token);
+		if(num <= 0 || num > MAX_QUESTIONS) {
+			printf("Invalid command format.\n");
+			return;
+		}
+	}
+	else {		// input "question_get topic"
+		question = token;
+		if(strlen(question) > QUESTION_SIZE || (token = strtok(NULL, " ")) != NULL) {
+			printf("Invalid command format.\n");
+			return;
+		}
+		user->selected_question = question;
+	}
+
+	memset(buffer, 0, BUFFER_SIZE);
 }
 
-void questionSubmit(char *buffer){
+int questionSubmit(struct User *user, char *commandArgs[]){	//TODO: check number of spaces
+	int i;
+	char *aux;
+	char *question;
+	char *text_file;
+	char *image_file;
+	char *ext;
+	char *filename = (char*)malloc(BUFFER_SIZE * sizeof(char));
+	char *imagename = (char*)malloc(BUFFER_SIZE * sizeof(char));
+
+	if(strcmp(user->selected_topic, "") == 0) {
+		printf("No selected topic.\n");
+		return INVALID;
+	}
+
+	question = commandArgs[0];
+
+	if(strlen(question) == 0) {
+		printf("Invalid command format.\n");
+		return INVALID;
+	}
+
+	text_file = commandArgs[1];
+	if((strlen(text_file) == 0) || strlen(question) > QUESTION_SIZE) {
+		printf("Invalid command format.\n");
+		return INVALID;
+	}
+
+	strcpy(filename, text_file);
+	strcat(filename, ".txt");
+	if (!fileExists(filename)) {
+		printf("Text file or image file does not exist.\n");
+		return INVALID;
+	}
+
+	aux = commandArgs[2];
+	if (strcmp(aux, "") != 0) {
+		strcpy(imagename, commandArgs[2]);
+		image_file = strtok(aux, ".");
+		ext = strtok(NULL, " ");
+		if (image_file == NULL || ext == NULL) {
+			printf("Invalid command format.\n");
+			return INVALID;
+		}
+		if (!fileExists(imagename)) {
+			printf("Text file or image file does not exist.\n");
+			return INVALID;
+		}
+	}
+	strcpy(user->selected_question, question);
+
+	for (i = 0; i < COMMANDS; i++) {
+		memset(commandArgs[i], 0, ARG_SIZE);
+	}
+	
+	return VALID;
 }
 
-void answerSubmit(char *buffer){
+int answerSubmit(struct User *user, char *commandArgs[]){
+	char *aux;
+	char *text_file;
+	char *image_file;
+	char *ext;
+	char *filename = (char*)malloc(BUFFER_SIZE * sizeof(char));
+	char *imagename = (char*)malloc(BUFFER_SIZE * sizeof(char));
+
+	if(strcmp(user->selected_topic, "") == 0) {
+		printf("No selected topic.\n");
+		return INVALID;
+	} else if(strcmp(user->selected_question, "") == 0) {
+		printf("No selected question.\n");
+		return INVALID;
+	}
+
+	text_file = commandArgs[0];
+	if(strlen(text_file) == 0) {
+		printf("Invalid command format.\n");
+		return INVALID;
+	}
+
+	strcpy(filename, text_file);
+	strcat(filename, ".txt");
+	if (!fileExists(filename)) {
+		printf("Text file or image file does not exist.\n");
+		return INVALID;
+	}
+
+	aux = commandArgs[1];
+	if (strcmp(aux, "") != 0) {
+		strcpy(imagename, commandArgs[1]);
+		image_file = strtok(aux, ".");
+		ext = strtok(NULL, " ");
+		if (image_file == NULL || ext == NULL) {
+			printf("Invalid command format.\n");
+			return INVALID;
+		}
+		if (!fileExists(imagename)) {
+			printf("Text file or image file does not exist.\n");
+			return INVALID;
+		}
+	}
+
+	return VALID;
 }

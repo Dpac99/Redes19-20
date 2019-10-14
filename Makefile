@@ -3,4 +3,4 @@ main_server:
 main_client:	
 	gcc -g -o main_client -Wall client/* others/*
 clean:
-	rm main_server
+	rm main_server main_client

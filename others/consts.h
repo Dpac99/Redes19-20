@@ -15,6 +15,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdbool.h> 
 #include <ctype.h>
 
 #define PORT "58053"
@@ -65,8 +66,10 @@
 #define COMMANDS					128
 #define ARG_SIZE					64
 #define TOPIC_SIZE				 	10
+#define QUESTION_SIZE				10
 #define MAX_TOPICS					99
 #define MAX_QUESTIONS				99
+#define MAX_ANSWERS					99
 #define USER_ID_SIZE				5
 #define VALID					 	1
 #define INVALID				 	 	0
