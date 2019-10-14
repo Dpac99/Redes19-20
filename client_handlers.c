@@ -72,8 +72,43 @@ int handleLTR(char *commandArgs[], struct User *user){
 	return VALID;
 }
 
-int handlePTR(char *buffer, struct User *user){
-	
+int handlePTR(char *buffer, struct User *user, char aux_topic[]){
+	char *token;
+	int count = 0;
+	int size = strlen(buffer);
+
+	token = strtok(buffer, " ");
+	count += strlen(token);
+
+	if (strcmp(token, TOPIC_PROPOSE_RESPONSE) == 0){
+		token = strtok(NULL, " ");
+		count += strlen(token);
+
+		if(strcmp(token, OK) == 0){
+			strcpy(user->selected_topic, aux_topic);
+			printf("Topic '%s' proposed successfully.\n", user->selected_topic);
+		}
+		else if(strcmp(token, NOK) == 0){
+			printf("Failed to propose topic '%s'.\n", aux_topic);
+		}
+		else if(strcmp(token, DUP) == 0){
+			printf("Topic '%s' already exists.\n", aux_topic);
+		}
+		else{
+			printf("Error receiving answer from server.\n");
+			return INVALID;
+		}
+		
+		if((size - count) > 1){
+			printf("Error receiving answer from server.\n");
+			return INVALID;
+		}
+	}
+	else{
+		printf("Error receiving answer from server.\n");
+		return INVALID;
+	}
+	return VALID;
 }
 
 int handleLQR(char *commandArgs[], struct User *user){
