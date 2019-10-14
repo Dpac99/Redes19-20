@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
     }
 
     else if (strcmp(command, "topic_select") == 0) {
-      //parseCommand(buffer, commandArgs);
+      // parseCommand(buffer, commandArgs);
       topicSelect(buffer, 0, user);
       memset(buffer, 0, BUFFER_SIZE);
     }
@@ -131,13 +131,22 @@ int main(int argc, char *argv[]) {
 
     else if ((strcmp(command, "question_submit") == 0) ||
              (strcmp(command, "qs") == 0)) {
+      // Clean commandArgs for this specific command
+      for(int i = 0; i < 2; i++){
+		    memset(commandArgs[i], 0, ARG_SIZE);
+	      }
       parseCommand(buffer, commandArgs);
-      status = questionSubmit(buffer, user, commandArgs);
+      status = questionSubmit(user, commandArgs);
     }
 
     else if ((strcmp(command, "answer_submit") == 0) ||
              (strcmp(command, "as") == 0)) {
-      status = answerSubmit(buffer);
+      // Clean commandArgs for this specific command
+      for(int i = 0; i < 2; i++){
+		    memset(commandArgs[i], 0, ARG_SIZE);
+	      }
+      parseCommand(buffer, commandArgs);
+      status = answerSubmit(user, commandArgs);
     }
 
     else {
