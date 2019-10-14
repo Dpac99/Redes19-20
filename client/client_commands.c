@@ -155,7 +155,7 @@ int questionList(char *buffer, struct User *user){
 		return INVALID;
 	}	
 
-	if(user->selected_topic == NULL){
+	if(strlen(user->selected_topic) == 0){
 		printf("Please select a topic first.\n");
 		return INVALID;
 	}
@@ -257,7 +257,6 @@ int answerSubmit(struct User *user, char *commandArgs[]){
 	char *ext;
 	char *filename = (char*)malloc(BUFFER_SIZE * sizeof(char));
 	char *imagename = (char*)malloc(BUFFER_SIZE * sizeof(char));
-	int image_ext_size = 0;
 
 	if(strcmp(user->selected_topic, "") == 0) {
 		printf("No selected topic.\n");
@@ -283,7 +282,6 @@ int answerSubmit(struct User *user, char *commandArgs[]){
 	aux = commandArgs[1];
 	if (aux != NULL) {
 		strcpy(imagename, commandArgs[1]);
-		image_ext_size = strlen(aux);
 		image_file = strtok(aux, ".");
 		ext = strtok(NULL, " ");
 		if (image_file == NULL || ext == NULL) {
