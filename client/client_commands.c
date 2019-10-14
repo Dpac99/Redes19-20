@@ -1,6 +1,5 @@
 #include "client_commands.h"
 
-
 // COMMAND HANDLING
 
 int registerUser(char *buffer, struct User *user){
@@ -203,7 +202,7 @@ void questionGet(char *buffer, int flag, struct User *user){	//TODO: get questio
 	memset(buffer, 0, BUFFER_SIZE);
 }
 
-int questionSubmit(char *buffer, struct User *user, char *commandArgs[]){	//TODO: clean code and check number of spaces
+int questionSubmit(struct User *user, char *commandArgs[]){	//TODO: check number of spaces
 	char *aux;
 	char *question;
 	char *text_file;
@@ -247,10 +246,55 @@ int questionSubmit(char *buffer, struct User *user, char *commandArgs[]){	//TODO
 		}
 	}
 	strcpy(user->selected_question, question);
-
+	
 	return VALID;
 }
 
-int answerSubmit(char *buffer){
+int answerSubmit(struct User *user, char *commandArgs[]){
+	char *aux;
+	char *text_file;
+	char *image_file;
+	char *ext;
+	char *filename = (char*)malloc(BUFFER_SIZE * sizeof(char));
+	char *imagename = (char*)malloc(BUFFER_SIZE * sizeof(char));
+	int image_ext_size = 0;
+
+	if(strcmp(user->selected_topic, "") == 0) {
+		printf("No selected topic.\n");
+		return INVALID;
+	} else if(strcmp(user->selected_question, "") == 0) {
+		printf("No selected question.\n");
+		return INVALID;
+	}
+
+	text_file = commandArgs[0];
+	if(text_file == NULL) {
+		printf("Invalid command format.\n");
+		return INVALID;
+	}
+
+	strcpy(filename, text_file);
+	strcat(filename, ".txt");
+	if (!fileExists(filename)) {
+		printf("Text file or image file does not exist.\n");
+		return INVALID;
+	}
+
+	aux = commandArgs[1];
+	if (aux != NULL) {
+		strcpy(imagename, commandArgs[1]);
+		image_ext_size = strlen(aux);
+		image_file = strtok(aux, ".");
+		ext = strtok(NULL, " ");
+		if (image_file == NULL || ext == NULL) {
+			printf("Invalid command format.\n");
+			return INVALID;
+		}
+		if (!fileExists(imagename)) {
+			printf("Text file or image file does not exist.\n");
+			return INVALID;
+		}
+	}
+
 	return VALID;
 }
