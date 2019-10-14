@@ -1,0 +1,1 @@
+UDPC:REG 11111$UDPS:RGR OK$UDPC:LTP$UDPS:LTR 4 aaa:12345 ahahaha:11111 tcp:11111 udp:11111$TCPC:QUS 11111 aaa test 34 [--> 34 bytes of data -->] 0$TCPS:QUR OK

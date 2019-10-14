@@ -1,7 +1,7 @@
 #ifndef __CLIENT_HANDLERS_H__
 #define __CLIENT_HANDLERS_H__
 
-#include "consts.h"
+#include "../others/consts.h"
 
 void handleRGR(char *buffer, struct User *user);
 int handleLTR(char *commandArgs[], struct User *user);

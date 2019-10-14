@@ -1,7 +1,6 @@
 main_server:
-	gcc -o main_server -Wall main_server.c *.h udp_server_handlers.c tcp_server_handlers.c helpers.c
-
-main_client:
-	gcc -o main_client -Wall main_client.c *.h client_commands.c client_handlers.c 
+	gcc -g -o main_server -Wall server/main_server.c server/*server*.h server/udp_server_handlers.c server/tcp_server_handlers.c others/helpers.c others/consts.h
+main_client:	
+	gcc -g -o main_client -Wall client/main_client.c client/client_handlers.h others/helpers.h others/consts.h client/client_handlers.c others/helpers.c
 clean:
 	rm main_server
