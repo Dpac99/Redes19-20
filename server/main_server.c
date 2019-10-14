@@ -85,19 +85,59 @@ int tcpHandler(char *buffer) {
       command[i] = '\0';
     }
   }
+  info[i - 4] = '\0';
   memset(buffer, 0, BUFFER_SIZE);
 
   if (strcmp(command, GET_QUESTION) == 0) {
+    printf("Submitting\n");
     return handleGetQuestion(info, buffer);
   } else if (strcmp(command, SUBMIT_QUESTION) == 0) {
     return handleSubmitQuestion(info, buffer);
-  } else if (strcmp(info, SUBMIT_ANSWER) == 0) {
+  } else if (strcmp(command, SUBMIT_ANSWER) == 0) {
     return handleSubmitAnswer(info, buffer);
   } else {
     sprintf(buffer, "%s\n", ERROR);
   }
 
   return 0;
+}
+
+void tcpCommunicate(int sockfd) {
+  int n, nsent;
+  char buffer[BUFFER_SIZE], *ptr;
+  memset(buffer, 0, BUFFER_SIZE);
+  n = recv(sockfd, buffer, BUFFER_SIZE, 0);
+  if (n == -1) {
+    close(sockfd);
+    if (flag)
+      printf("Error with read: %d\n", errno);
+    exit(flag);
+  }
+
+  printf("Received: %s", buffer);
+
+  tcpHandler(buffer);
+  n = strlen(buffer);
+
+  ptr = &buffer[0];
+  printf("SENT: %s", buffer);
+
+  while (n > 0) {
+    if ((nsent = write(sockfd, ptr, n)) <= 0) {
+      close(sockfd);
+      if (flag)
+        printf("Error with write: %d\n", errno);
+      exit(flag);
+    }
+    n -= nsent;
+    ptr += nsent;
+  }
+}
+
+void initFS() {
+  if (opendir(TOPICS) == NULL && errno == ENOENT) {
+    mkdir(TOPICS, 0700);
+  }
 }
 
 // Main
@@ -109,9 +149,9 @@ int main(int argc, char *argv[]) {
   pid_t pid;
   socklen_t addrlen;
   int udp_fd = 0, tcp_fd = 0, errcode, maxfd, nready, resp_fd;
-  ssize_t n, nread, nsent;
+  ssize_t nread, nsent;
   char buffer[BUFFER_SIZE], buffer2[BUFFER_SIZE], host[BUFFER_SIZE],
-      service[BUFFER_SIZE], *ptr, *port;
+      service[BUFFER_SIZE], *port;
   fd_set rfds;
 
   port = (char *)malloc(16);
@@ -152,6 +192,8 @@ int main(int argc, char *argv[]) {
 
   printf("Server running on port %s\n\n", port);
 
+  initFS();
+
   for (i = res; i != NULL; i = i->ai_next) {
     if (i->ai_socktype == SOCK_DGRAM) { // UDP Socket
 
@@ -177,7 +219,7 @@ int main(int argc, char *argv[]) {
         exit(flag);
       }
 
-    } else if (i->ai_socktype == SOCK_STREAM) {
+    } else if (i->ai_socktype == SOCK_STREAM) { // TCP Socket
 
       if ((tcp_fd = socket(i->ai_family, i->ai_socktype, i->ai_protocol)) ==
           -1) {
@@ -234,7 +276,6 @@ int main(int argc, char *argv[]) {
     memset(buffer2, 0, sizeof(char) * BUFFER_SIZE);
 
     if (FD_ISSET(udp_fd, &rfds)) {
-      n = 0;
       nsent = 0;
       nread = 0;
       addrlen = sizeof(addr);
@@ -281,8 +322,6 @@ int main(int argc, char *argv[]) {
     }
 
     if (FD_ISSET(tcp_fd, &rfds)) {
-
-      n = 0;
       nsent = 0;
       nread = 0;
       addrlen = sizeof(addr);
@@ -305,39 +344,12 @@ int main(int argc, char *argv[]) {
             printf("Error with accept tcp\n");
           exit(flag);
         }
-        while ((n = read(resp_fd, buffer2, BUFFER_SIZE)) > 0) {
-          if (n == -1) {
-            close(resp_fd);
-            if (flag)
-              printf("Error with read: %d\n", errno);
-            exit(flag);
-          }
-        }
-
-        printf("Received: %s\n", buffer2);
-
-        tcpHandler(buffer2);
-        n = strlen(buffer2);
-
-        ptr = &buffer2[0];
-        printf(buffer2);
-
-        while (n > 0) {
-          if ((nsent = write(resp_fd, ptr, n)) <= 0) {
-            close(resp_fd);
-            if (flag)
-              printf("Error with write: %d\n", errno);
-            exit(flag);
-          }
-          n -= nsent;
-          ptr += nsent;
-        }
-
-        printf("SENT: %s", buffer2);
-
+        tcpCommunicate(resp_fd);
         close(resp_fd);
         exit(0);
-      } else {
+      }
+
+      else {
         int r;
         do
           r = close(resp_fd);
