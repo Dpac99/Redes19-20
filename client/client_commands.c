@@ -154,10 +154,15 @@ int questionList(char *buffer, struct User *user){
 	if((token = strtok(buffer, " ")) != NULL){
 		printf("Invalid command format.\n");
 		return INVALID;
+	}	
+
+	if(user->selected_topic == NULL){
+		printf("Please select a topic first.\n");
+		return INVALID;
 	}
 
 	memset(buffer, 0, BUFFER_SIZE);
-	sprintf(buffer, "%s\n", QUESTION_LIST);
+	sprintf(buffer, "%s %s\n", QUESTION_LIST, user->selected_topic);
 	return VALID;
 }
 

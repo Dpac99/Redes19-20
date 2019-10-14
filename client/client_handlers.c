@@ -112,5 +112,5 @@ int handlePTR(char *buffer, struct User *user, char aux_topic[]){
 }
 
 int handleLQR(char *commandArgs[], struct User *user){
-
+	
 }

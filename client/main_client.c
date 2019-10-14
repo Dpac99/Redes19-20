@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
     }
 
     else if (strcmp(command, "topic_select") == 0) {
-      parseCommand(buffer, commandArgs);
+      //parseCommand(buffer, commandArgs);
       topicSelect(buffer, 0, user);
       memset(buffer, 0, BUFFER_SIZE);
     }
@@ -112,7 +112,10 @@ int main(int argc, char *argv[]) {
              (strcmp(command, "ql") == 0)) {
       status = questionList(buffer, user);
       if (status == VALID) {
-        // TODO: implement communication and handler
+        if (communicateUDP(buffer, udp_fd, res, addr)) {
+          parseCommand(buffer, commandArgs);
+          handleLQR(commandArgs, user);
+        }
       } else {
         memset(buffer, 0, BUFFER_SIZE);
       }
