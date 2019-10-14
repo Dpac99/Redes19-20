@@ -31,6 +31,7 @@ int parseCommand(char *buffer, char *commandArgs[]) {
   int i = 0, count = 0, size = strlen(buffer);
   token = strtok(buffer, " ");
 
+  i=0;
   while ((token != NULL) && (i < COMMANDS)) {
     if (strlen(token) <= ARG_SIZE) {
       count += strlen(token);
@@ -42,7 +43,6 @@ int parseCommand(char *buffer, char *commandArgs[]) {
       return INVALID;
     }
   }
-
   if ((i >= COMMANDS) && (token != NULL)) {
     return INVALID;
   } 

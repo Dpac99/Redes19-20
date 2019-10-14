@@ -203,6 +203,7 @@ void questionGet(char *buffer, int flag, struct User *user){	//TODO: get questio
 }
 
 int questionSubmit(struct User *user, char *commandArgs[]){	//TODO: check number of spaces
+	int i;
 	char *aux;
 	char *question;
 	char *text_file;
@@ -211,15 +212,20 @@ int questionSubmit(struct User *user, char *commandArgs[]){	//TODO: check number
 	char *filename = (char*)malloc(BUFFER_SIZE * sizeof(char));
 	char *imagename = (char*)malloc(BUFFER_SIZE * sizeof(char));
 
+	if(strcmp(user->selected_topic, "") == 0) {
+		printf("No selected topic.\n");
+		return INVALID;
+	}
+
 	question = commandArgs[0];
 
-	if(question == NULL) {
+	if(strlen(question) == 0) {
 		printf("Invalid command format.\n");
 		return INVALID;
 	}
 
 	text_file = commandArgs[1];
-	if(text_file == NULL || strlen(question) > QUESTION_SIZE) {
+	if((strlen(text_file) == 0) || strlen(question) > QUESTION_SIZE) {
 		printf("Invalid command format.\n");
 		return INVALID;
 	}
@@ -232,7 +238,7 @@ int questionSubmit(struct User *user, char *commandArgs[]){	//TODO: check number
 	}
 
 	aux = commandArgs[2];
-	if (aux != NULL) {
+	if (strcmp(aux, "") != 0) {
 		strcpy(imagename, commandArgs[2]);
 		image_file = strtok(aux, ".");
 		ext = strtok(NULL, " ");
@@ -246,6 +252,10 @@ int questionSubmit(struct User *user, char *commandArgs[]){	//TODO: check number
 		}
 	}
 	strcpy(user->selected_question, question);
+
+	for (i = 0; i < COMMANDS; i++) {
+		memset(commandArgs[i], 0, ARG_SIZE);
+	}
 	
 	return VALID;
 }
@@ -267,7 +277,7 @@ int answerSubmit(struct User *user, char *commandArgs[]){
 	}
 
 	text_file = commandArgs[0];
-	if(text_file == NULL) {
+	if(strlen(text_file) == 0) {
 		printf("Invalid command format.\n");
 		return INVALID;
 	}
@@ -280,7 +290,7 @@ int answerSubmit(struct User *user, char *commandArgs[]){
 	}
 
 	aux = commandArgs[1];
-	if (aux != NULL) {
+	if (strcmp(aux, "") != 0) {
 		strcpy(imagename, commandArgs[1]);
 		image_file = strtok(aux, ".");
 		ext = strtok(NULL, " ");
