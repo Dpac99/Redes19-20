@@ -1,22 +1,24 @@
 #include "client_commands.h"
 #include "client_handlers.h"
-#include "consts.h"
-#include "helpers.h"
+#include "../others/consts.h"
+#include "../others/helpers.h"
 
 void parseArgs(int argc, char *argv[], char *port, char *server_IP);
 int readCommand(char *buffer);
 struct User *initUser();
-int communicateUDP(char *buffer, int fd, struct addrinfo *res, struct sockaddr_in addr);
+int communicateUDP(char *buffer, int fd, struct addrinfo *res,
+                   struct sockaddr_in addr);
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 
   // INITIALIZATION OF GLOBAL VARIABLES
-  int tcp_fd, udp_fd, n, size, status;
+  int udp_fd, n, size, status;
 
   struct addrinfo hints, *res;
   struct sockaddr_in addr;
   struct User *user = initUser();
-  char buffer[BUFFER_SIZE], commandArgs[COMMANDS][ARG_SIZE], *port, *server_IP, command[COMMAND_SIZE];
+  char buffer[BUFFER_SIZE], commandArgs[COMMANDS][ARG_SIZE], *port, *server_IP,
+      command[COMMAND_SIZE];
 
   port = (char *)malloc(16);
   if (port == NULL) {
@@ -41,10 +43,10 @@ int main(int argc, char *argv[]){
   if (strlen(server_IP) == 0)
     server_IP = NULL;
 
-
   n = getaddrinfo(server_IP, port, &hints, &res);
   if (n != 0) {
-    printf("Error connecting to server. Server: %s . Port: %s\n", server_IP, port);
+    printf("Error connecting to server. Server: %s . Port: %s\n", server_IP,
+           port);
     exit(1);
   }
 
@@ -66,8 +68,7 @@ int main(int argc, char *argv[]){
       if (status == VALID) {
         communicateUDP(buffer, udp_fd, res, addr);
         handleRGR(buffer, user);
-      } 
-      else {
+      } else {
         memset(buffer, 0, BUFFER_SIZE);
       }
     }
@@ -76,12 +77,11 @@ int main(int argc, char *argv[]){
              (strcmp(command, "tl") == 0)) {
       status = topicList(buffer, user);
       if (status == VALID) {
-        if(communicateUDP(buffer, udp_fd, res, addr)){
+        if (communicateUDP(buffer, udp_fd, res, addr)) {
           parseCommand(buffer, commandArgs);
           handleLTR(commandArgs, user);
         }
-      } 
-      else {
+      } else {
         memset(buffer, 0, BUFFER_SIZE);
       }
     }
@@ -101,7 +101,8 @@ int main(int argc, char *argv[]){
              (strcmp(command, "tp") == 0)) {
       status = topicPropose(buffer, user);
       if (status == VALID) {
-        // TODO: implement communication and handler
+        communicateUDP(buffer, udp_fd, res, addr);
+        handlePTR(buffer, user);
       } else {
         memset(buffer, 0, BUFFER_SIZE);
       }
@@ -182,8 +183,9 @@ int readCommand(char *buffer) {
 }
 
 int communicateUDP(char *buffer, int fd, struct addrinfo *res,
-                    struct sockaddr_in addr) {
-  int nwrite, nread, size, addrlen;
+                   struct sockaddr_in addr) {
+  int nwrite, nread, size;
+  socklen_t addrlen;
 
   size = strlen(buffer);
 
@@ -195,14 +197,16 @@ int communicateUDP(char *buffer, int fd, struct addrinfo *res,
   memset(buffer, 0, BUFFER_SIZE);
   addrlen = sizeof(addr);
 
-  nread = recvfrom(fd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
+  nread =
+      recvfrom(fd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
   if (nread == -1) {
     exit(1);
   }
 
   size = strcspn(buffer, "\n");
-  if( nread != (size + 1) ){
-    printf("Error receiving message from server. New line character is mandatory.\n");
+  if (nread != (size + 1)) {
+    printf("Error receiving message from server. New line character is "
+           "mandatory.\n");
     return INVALID;
   }
 
@@ -225,23 +229,37 @@ struct User *initUser() {
     exit(1);
   }
 
-  user->topics = (char **)malloc(99 * sizeof(char *));
+  user->topics = (char **)malloc(MAX_TOPICS * sizeof(char *));
+  if (user->topics == NULL) {
+    printf("Error allocating memory.\n");
+    exit(1);
+  }
+
+  user->questions = (char **)malloc(MAX_QUESTIONS * sizeof(char *));
   if (user->topics == NULL) {
     printf("Error allocating memory.\n");
     exit(1);
   }
 
   user->userId = -1;
-  
-  user->selected_topic = (char*)malloc(10 * sizeof(char));
-	if( user->selected_topic == NULL){
-		printf("Error allocating memory.\n");
-		exit(1);
-	}
+  user->num_topics = 0;
+  user->num_questions = 0;
 
-  for (i = 0; i < 99; i++) {
-    user->topics[i] = (char *)malloc(10 * sizeof(char));
+  user->selected_topic = (char *)malloc(10 * sizeof(char));
+  if (user->selected_topic == NULL) {
+    printf("Error allocating memory.\n");
+    exit(1);
+  }
+
+  for (i = 0; i < MAX_TOPICS; i++) {
+    user->topics[i] = (char *)malloc(TOPIC_SIZE * sizeof(char));
     if (user->topics[i] == NULL) {
+      printf("Error allocating memory.\n");
+      exit(1);
+    }
+
+    user->questions[i] = (char *)malloc(TOPIC_SIZE * sizeof(char));
+    if (user->questions[i] == NULL) {
       printf("Error allocating memory.\n");
       exit(1);
     }

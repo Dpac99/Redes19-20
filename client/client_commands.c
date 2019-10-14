@@ -1,5 +1,5 @@
 #include "client_commands.h"
-#include "helpers.h"
+#include "../others/helpers.h"
 
 // COMMAND HANDLING
 
@@ -56,11 +56,11 @@ int topicList(char *buffer, struct User *user){
 	return VALID;
 }
 
-void topicSelect(char *buffer, int flag, struct User *user){		//TODO: confirmar se e preciso fazer free do topic
-	char *token;
-	int num, buffer_size;
-	char* topic;
+void topicSelect(char *buffer, int flag, struct User *user){		
+	char *token, *topic;
+	int num, buffer_size, i=0, n_topics, status = INVALID;
 
+	n_topics = user->num_topics;
 	buffer_size = strlen(buffer);
 	token = strtok(buffer, " ");
 	
@@ -74,25 +74,50 @@ void topicSelect(char *buffer, int flag, struct User *user){		//TODO: confirmar 
 		return;
 	}
 
-	if(flag) {	// input "ts num"
-		num = atoi(token);
-		if(num <= 0 || num > 99)
-			printf("Invalid command format.\n");
-	}
-	else {		// input "topic_select topic"
-		topic = token;
-		if(strlen(topic) > 10 || (token = strtok(NULL, " ")) != NULL)
-			printf("Invalid command format.\n");
-		user->selected_topic = topic;
-	}
+	if(n_topics > 0){
+		if(flag) {	// input "ts num"
+			if(isnumber(token)){
+				num = atoi(token);
+				if(num <= 0 || num > MAX_TOPICS)
+					printf("Invalid command format.\n");
+				else{
+					user->selected_topic = user->topics[num - 1];
+					status = VALID;
+				}
+			}
+		}
+		else {		// input "topic_select topic"
+			topic = token;
+			if(strlen(topic) > TOPIC_SIZE || (token = strtok(NULL, " ")) != NULL)
+				printf("Invalid command format.\n");
+			else{
+				for(i = 0; i < n_topics; i++){
+					if( strcmp(user->topics[i], topic) == 0){
+						user->selected_topic = user->topics[i];
+						status = VALID;
+						break;
+					}
+				}
+				if(status == INVALID)
+					printf("The topic %s doesn't exist. Try again.\n", topic);
+			}
+		}
+		if(status == VALID){
+			printf("Topic '%s' is now selected.\n", user->selected_topic);
+		}
 
+	}
+	else{
+		printf("Please list the topics first.\n");
+	}
+	
 	memset(buffer, 0, BUFFER_SIZE);
+	return;
 }
 
-int topicPropose(char *buffer, struct User *user){					//TODO: confirmar se e preciso fazer free do topic
-	char *token;
+int topicPropose(char *buffer, struct User *user){					
+	char *token, *topic;
 	int buffer_size;
-	char *topic;
 
 	buffer_size = strlen(buffer);
 	token = strtok(buffer, " ");
@@ -108,13 +133,13 @@ int topicPropose(char *buffer, struct User *user){					//TODO: confirmar se e pr
 	}
 
 	topic = token;
-	if(strlen(topic) > TOPIC_SIZE || (token = strtok(NULL, " ")) != NULL) {
+	if(strlen(topic) > TOPIC_SIZE || (token = strtok(NULL, " ")) != NULL)
 		printf("Invalid command format.\n");
-		return INVALID;
-	}
-	user->selected_topic = topic;
 
+	strcpy(user->selected_topic, topic);
 	memset(buffer, 0, BUFFER_SIZE);
+	sprintf(buffer, "%s %s\n", TOPIC_PROPOSE, user->selected_topic);
+
 	return VALID;
 }
 
@@ -132,7 +157,7 @@ int questionList(char *buffer, struct User *user){
 	}
 
 	memset(buffer, 0, BUFFER_SIZE);
-	sprintf(buffer, "%s\n", TOPIC_LIST);
+	sprintf(buffer, "%s\n", QUESTION_LIST);
 	return VALID;
 }
 
@@ -201,7 +226,7 @@ int questionSubmit(char *buffer, struct User *user, char *commandArgs[]){	//TODO
 	strcpy(filename, text_file);
 	strcat(filename, ".txt");
 	if (!fileExists(filename)) {
-		printf("Text file does not exist.\n");
+		printf("Text file or image file does not exist.\n");
 		return INVALID;
 	}
 
@@ -216,9 +241,9 @@ int questionSubmit(char *buffer, struct User *user, char *commandArgs[]){	//TODO
 			return INVALID;
 		}
 		if (!fileExists(imagename)) {
-		printf("Image file does not exist.\n");
-		return INVALID;
-	}
+			printf("Text file or image file does not exist.\n");
+			return INVALID;
+		}
 	}
 
 	// if((buffer_size - strlen(question) - strlen(text_file) - image_ext_size) > 2 && image_ext_size == 0) {

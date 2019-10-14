@@ -1,5 +1,5 @@
 #include "client_handlers.h"
-#include "helpers.h"
+#include "../others/helpers.h"
 
 //PROTOCOL RESPONSE HANDLERS
 
@@ -25,7 +25,7 @@ void handleRGR(char *buffer, struct User *user){
 
 int handleLTR(char *commandArgs[], struct User *user){
 	char *token;
-	char UserIds[MAX_TOPICS];
+	char *UserIds[MAX_TOPICS][USER_ID_SIZE];
 	int n_topics, i, err = 0;
 
 	if((strcmp(commandArgs[0], TOPIC_LIST_RESPONSE) == 0) && (0 < isnumber(commandArgs[1]) <= MAX_TOPICS)){
@@ -37,7 +37,7 @@ int handleLTR(char *commandArgs[], struct User *user){
 				token = strtok(NULL, ":");
 				if(isnumber(token) && isValidId(token)){
 					strcpy(user->topics[i], commandArgs[i+2]); 
-					UserIds[i] = atoi(token);				
+					strcpy(UserIds[i], token);		
 				}
 				else{
 					err = 1;
@@ -62,10 +62,20 @@ int handleLTR(char *commandArgs[], struct User *user){
 		}
 		return INVALID;
 	}
+
+	
 	for(i = 0; i < n_topics; i++){
-		printf("Topic %d: %s. Proposed by user %d.\n", i+1, user->topics[i], UserIds[i]);
+		printf("Topic %d: %s.	Proposed by user %s.\n", i+1, user->topics[i], UserIds[i]);
 		memset(commandArgs[i], 0, ARG_SIZE);
 	}
-
+	user->num_topics = n_topics;
 	return VALID;
+}
+
+int handlePTR(char *buffer, struct User *user){
+	
+}
+
+int handleLQR(char *commandArgs[], struct User *user){
+
 }

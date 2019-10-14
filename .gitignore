@@ -1,8 +1,7 @@
-server
-client
+main_server
+main_client
 client_upd
 client_tcp
 server_udp
 server_tcp
-TOPICS
 .vscode

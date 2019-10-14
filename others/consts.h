@@ -19,7 +19,35 @@
 #include <stdbool.h> 
 
 #define PORT "58053"
-#define FULL "FUL\n\0"
+
+// Commands
+
+
+// UDP
+#define REGISTER "REG"
+#define REGISTER_RESPONSE "RGR"
+#define TOPIC_LIST "LTP"
+#define TOPIC_LIST_RESPONSE "LTR"
+#define TOPIC_PROPOSE "PTP"
+#define TOPIC_PROPOSE_RESPONSE "PTR"
+#define QUESTION_LIST "LQU"
+#define QUESTION_LIST_RESPONSE "LQR"
+
+// TCP
+#define GET_QUESTION "GQU"
+#define GET_QUESTION_RESPONSE "QGR"
+#define SUBMIT_QUESTION "QUS"
+#define SUBMIT_QUESTION_RESPONSE "QUR"
+#define SUBMIT_ANSWER "ANS"
+#define SUBMIT_ANSWER_RESPONSE "ANR"
+
+// Status codes
+#define OK "OK"
+#define NOK "NOK"
+#define DUP "DUP"
+#define ERROR "ERR"
+#define END_OF_FILE "EOF"
+#define FULL "FUL"
 
 // Other info
 #define TOPICS "TOPICS"
@@ -32,27 +60,6 @@
 #define IMG_DATA "IMG_DATA.txt"
 #define ANS_DATA "ANS_DATA.txt"
 
-
-//Commands
-#define REGISTER 				 "REG"
-#define REGISTER_RESPONSE 		 "RGR"
-#define TOPIC_LIST 				 "LTP" 
-#define TOPIC_LIST_RESPONSE 	 "LTR"
-#define TOPIC_PROPOSE 			 "PTP"
-#define TOPIC_PROPOSE_RESPONSE 	 "PTR"
-#define QUESTION_LIST 			 "LQU"
-#define QUESTION_LIST_RESPONSE 	 "LQR"
-#define GET_QUESTION 			 "GQU"
-#define GET_QUESTION_RESPONSE 	 "QGR"
-#define SUBMIT_QUESTION 		 "QUS"
-#define SUBMIT_QUESTION_RESPONSE "QUR"
-#define SUBMIT_ANSWER 			 "ANS"
-#define SUBMIT_ANSWER_RESPONSE 	 "ANR"
-#define OK 						 "OK"
-#define NOK 					 "NOK" 
-#define DUP 					 "DUP"
-#define ERROR 					 "ERR"
-#define END_OF_FILE 			 "EOF"
 
 #define BUFFER_SIZE				 	2048
 #define COMMAND_SIZE			 	64
@@ -74,7 +81,9 @@ struct User{
 	char *selected_topic;		
 	char *selected_question;
 	char **topics;
+	char **questions;
 	int num_topics;
+	int num_questions;
 };
 
 #endif
