@@ -1,7 +1,7 @@
-#include "client_commands.h"
-#include "client_handlers.h"
 #include "../others/consts.h"
 #include "../others/helpers.h"
+#include "client_commands.h"
+#include "client_handlers.h"
 
 void parseArgs(int argc, char *argv[], char *port, char *server_IP);
 int readCommand(char *buffer);
@@ -17,7 +17,8 @@ int main(int argc, char *argv[]) {
   struct addrinfo hints, *res;
   struct sockaddr_in addr;
   struct User *user;
-  char buffer[BUFFER_SIZE], **commandArgs, *port, *server_IP, command[COMMAND_SIZE];
+  char buffer[BUFFER_SIZE], **commandArgs, *port, *server_IP,
+      command[COMMAND_SIZE];
   char topic[TOPIC_SIZE];
 
   user = initUser();
@@ -44,7 +45,7 @@ int main(int argc, char *argv[]) {
   if (strlen(server_IP) == 0)
     server_IP = NULL;
 
-  commandArgs = (char **)malloc(COMMANDS * sizeof(char*));
+  commandArgs = (char **)malloc(COMMANDS * sizeof(char *));
   if (commandArgs == NULL) {
     printf("Error allocating memory.\n");
     exit(1);
@@ -72,6 +73,7 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
+  printf("Welcome!\n>> ");
   scanf("%s", command);
   readCommand(buffer);
 
@@ -124,7 +126,7 @@ int main(int argc, char *argv[]) {
 
     else if ((strcmp(command, "question_list") == 0) ||
              (strcmp(command, "ql") == 0)) {
-               
+
       status = questionList(buffer, user);
       if (status == VALID) {
         if (communicateUDP(buffer, udp_fd, res, addr)) {
@@ -149,9 +151,9 @@ int main(int argc, char *argv[]) {
              (strcmp(command, "qs") == 0)) {
       // Clean commandArgs for this specific command
       // for(int i = 0; i < 2; i++){
-		  //   memset(commandArgs[i], 0, ARG_SIZE);
-	    //   }
-      //memset(commandArgs[2], 0, ARG_SIZE);
+      //   memset(commandArgs[i], 0, ARG_SIZE);
+      //   }
+      // memset(commandArgs[2], 0, ARG_SIZE);
       parseCommand(buffer, commandArgs);
       status = questionSubmit(user, commandArgs);
     }
@@ -160,9 +162,9 @@ int main(int argc, char *argv[]) {
              (strcmp(command, "as") == 0)) {
       // Clean commandArgs for this specific command
       // for(int i = 0; i < 2; i++){
-		  //   memset(commandArgs[i], 0, ARG_SIZE);
-	    //   }
-      //memset(commandArgs[2], 0, ARG_SIZE);
+      //   memset(commandArgs[i], 0, ARG_SIZE);
+      //   }
+      // memset(commandArgs[2], 0, ARG_SIZE);
       parseCommand(buffer, commandArgs);
       status = answerSubmit(user, commandArgs);
     }
@@ -173,6 +175,7 @@ int main(int argc, char *argv[]) {
 
     memset(buffer, 0, BUFFER_SIZE);
     memset(command, 0, COMMAND_SIZE);
+    printf(">> ");
     scanf("%s", command);
     readCommand(buffer);
   }
@@ -201,12 +204,14 @@ void parseArgs(int argc, char *argv[], char *port, char *server_IP) {
 
 int readCommand(char *buffer) {
   memset(buffer, 0, BUFFER_SIZE);
-  char c = getchar();
+  char c;
   int i = 0;
 
-  while (c != '\n') {
+  while ((c = getchar()) != '\n') {
+    if (!i && c == ' ') {
+      continue; // Removes first space after command
+    }
     buffer[i] = c;
-    c = getchar();
     i++;
   }
   return i;
@@ -241,10 +246,11 @@ int communicateUDP(char *buffer, int fd, struct addrinfo *res,
   }
 
   buffer[size] = '\0';
+
   return VALID;
 }
 
-struct User *initUser(){
+struct User *initUser() {
   int i;
 
   struct User *user = (struct User *)malloc(sizeof(struct User));

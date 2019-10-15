@@ -15,7 +15,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <sys/stat.h>
 #include <stdbool.h> 
 #include <ctype.h>
 
@@ -74,7 +73,7 @@
 #define USER_ID_SIZE				5
 #define VALID					 	1
 #define INVALID				 	 	0
-#define REGISTER_REG_LENGTH		 	6	// after register/reg: " *****"
+#define REGISTER_REG_LENGTH		 	5	// after register/reg: "*****"
 #define TOPIC_LIST_LENGTH		 	0 	// after topic_list/tl: ""
 #define QUESTION_LIST_LENGTH		0 	// after question_list/ql: ""
 
