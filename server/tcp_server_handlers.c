@@ -1,6 +1,8 @@
 #include "../others/consts.h"
 #include "../others/helpers.h"
 
+// TODO: Fix QuestionGet with images
+
 int parseGetQuestion(char *info, char *topic, char *question) {
   int infoSize = strlen(info);
   int i, j = 0;
@@ -512,7 +514,7 @@ int parseSubmitQuestion(char *info, int *id, char *topic, char *question,
                         char *iData) {
 
   int infoSize = strlen(info);
-  int i = 0, err, total = 0;
+  int i = 0, total = 0;
   char rest[BUFFER_SIZE];
 
   char *token = strtok(info, " ");
@@ -546,25 +548,27 @@ int parseSubmitQuestion(char *info, int *id, char *topic, char *question,
 
   *qIMG = info[total] - '0';
 
+  printf("%c -> %d\n", info[total], *qIMG);
+
   total += sizeOfNumber(*qIMG) + 1;
   if (*qIMG == 1) {
     for (int j = 0; total + j < infoSize; j++) {
       rest[j] = info[total + j];
     }
 
-    printf("rest=%s\n", rest);
+    token = strtok(rest, " ");
+    strcpy(ext, token);
+    token = strtok(NULL, " ");
+    *iSize = atoi(token);
 
-    err = sscanf("%s %d", ext, iSize);
-    if (err != 2) {
-      printf("1\n");
-      return 1;
-    }
-
-    total += strlen(ext) + sizeOfNumber(*iSize) + 2;
+    int subtotal = strlen(ext) + sizeOfNumber(*iSize) + 2;
+    total += subtotal;
 
     for (int k = 0; k < *iSize; k++) {
-      iData[k] = rest[total + k];
+      iData[k] = rest[subtotal + k];
     }
+
+    total += strlen(iData);
   }
 
   total++;
@@ -796,7 +800,7 @@ int parseSubmitAnswer(char *info, int *id, char *topic, char *question,
                       char *iData) {
 
   int infoSize = strlen(info);
-  int i = 0, err, total = 0;
+  int i = 0, total = 0;
   char rest[BUFFER_SIZE];
 
   char *token = strtok(info, " ");
@@ -836,10 +840,16 @@ int parseSubmitAnswer(char *info, int *id, char *topic, char *question,
       rest[j] = info[total + j];
     }
 
-    total += strlen(ext) + sizeOfNumber(*iSize) + 2;
+    token = strtok(rest, " ");
+    strcpy(ext, token);
+    token = strtok(NULL, " ");
+    *iSize = atoi(token);
+
+    int subtotal = strlen(ext) + sizeOfNumber(*iSize) + 2;
+    total + subtotal;
 
     for (int k = 0; k < *iSize; k++) {
-      iData[k] = rest[total + k];
+      iData[k] = rest[subtotal + k];
     }
   }
 
