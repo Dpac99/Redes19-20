@@ -203,7 +203,7 @@ void questionGet(char *buffer, int flag, struct User *user){	//TODO: get questio
 }
 
 int questionSubmit(struct User *user, char *commandArgs[]){	//TODO: check number of spaces
-	int i;
+	int i, imageExists = FALSE;
 	char *aux;
 	char *question;
 	char *text_file;
@@ -239,6 +239,7 @@ int questionSubmit(struct User *user, char *commandArgs[]){	//TODO: check number
 
 	aux = commandArgs[2];
 	if (strcmp(aux, "") != 0) {
+		imageExists = TRUE;
 		strcpy(imagename, commandArgs[2]);
 		image_file = strtok(aux, ".");
 		ext = strtok(NULL, " ");
@@ -256,6 +257,10 @@ int questionSubmit(struct User *user, char *commandArgs[]){	//TODO: check number
 	for (i = 0; i < COMMANDS; i++) {
 		memset(commandArgs[i], 0, ARG_SIZE);
 	}
+
+	copyFile(filename);
+	if (imageExists)
+		copyFile(imagename);
 	
 	return VALID;
 }
@@ -267,7 +272,6 @@ int answerSubmit(struct User *user, char *commandArgs[]){
 	char *ext;
 	char *filename = (char*)malloc(BUFFER_SIZE * sizeof(char));
 	char *imagename = (char*)malloc(BUFFER_SIZE * sizeof(char));
-	int image_ext_size = 0;
 
 	if(strcmp(user->selected_topic, "") == 0) {
 		printf("No selected topic.\n");
@@ -293,7 +297,6 @@ int answerSubmit(struct User *user, char *commandArgs[]){
 	aux = commandArgs[1];
 	if (strcmp(aux, "") != 0) {
 		strcpy(imagename, commandArgs[1]);
-		image_ext_size = strlen(aux);
 		image_file = strtok(aux, ".");
 		ext = strtok(NULL, " ");
 		if (image_file == NULL || ext == NULL) {
