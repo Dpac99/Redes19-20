@@ -71,7 +71,7 @@
 #define MAX_QUESTIONS				99
 #define MAX_ANSWERS					99
 #define USER_ID_SIZE				5
-#define REGISTER_REG_LENGTH		 	6	// after register/reg: " *****"
+#define REGISTER_REG_LENGTH		 	5	// after register/reg: " *****"
 #define TOPIC_LIST_LENGTH		 	0 	// after topic_list/tl: ""
 #define QUESTION_LIST_LENGTH		0 	// after question_list/ql: ""
 

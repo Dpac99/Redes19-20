@@ -7,7 +7,7 @@ int registerUser(char *buffer, struct User *user) {
   int id, n, count = 0;
 
   if (strlen(buffer) != REGISTER_REG_LENGTH) {
-    printf("Invalid command format.\n");
+    printf("Invalid command format.1\n");
     return INVALID;
   }
 
@@ -16,7 +16,7 @@ int registerUser(char *buffer, struct User *user) {
   n = id;
 
   if (id == 0) {
-    printf("Invalid command format.\n");
+    printf("Invalid command format.2\n");
     return INVALID;
   }
 
@@ -25,12 +25,12 @@ int registerUser(char *buffer, struct User *user) {
     ++count;
   }
   if (count != 5) {
-    printf("Invalid command format.\n");
+    printf("Invalid command format.3\n");
     return INVALID;
   }
 
   if ((token = strtok(NULL, " ")) != NULL) {
-    printf("Invalid command format.\n");
+    printf("Invalid command format.4\n");
     return INVALID;
   }
 
