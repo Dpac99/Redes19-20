@@ -33,17 +33,15 @@ int handleTopicList(char *info, char *dest) {
       }
     }
   } else {
-    printf("\n2\n");
     memset(dest, 0, BUFFER_SIZE);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
 
-  qsort((void *)files, i, 32 * sizeof(char), comparator);
+  // qsort((void *)files, i, 32 * sizeof(char), comparator);
 
   err = sprintf(dest + strlen(dest), "%d", i);
   if (err < 0) {
-    printf("\n3\n");
     memset(dest, 0, BUFFER_SIZE);
     sprintf(dest, "%s\n", ERROR);
     return 1;
@@ -52,22 +50,19 @@ int handleTopicList(char *info, char *dest) {
     memset(path, 0, 128);
     err = sprintf(path, "%s/%s/%s", TOPICS, files[c], USER);
     if (err < 0) {
-      printf("\n4\n");
       memset(dest, 0, BUFFER_SIZE);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
-    printf("%s\n", path);
+
     fd = fopen(path, "r");
     if (fd == NULL) {
-      printf("\n5\n");
       memset(dest, 0, BUFFER_SIZE);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
     err = fscanf(fd, "%d", &id);
     if (err < 0) {
-      printf("\n6\n");
       memset(dest, 0, BUFFER_SIZE);
       sprintf(dest, "%s\n", ERROR);
       return 1;
@@ -75,7 +70,6 @@ int handleTopicList(char *info, char *dest) {
     fclose(fd);
     err = sprintf(dest + strlen(dest), " %s:%d", files[c], id);
     if (err < 0) {
-      printf("\n7\n");
       memset(dest, 0, BUFFER_SIZE);
       sprintf(dest, "%s\n", ERROR);
       return 1;
@@ -166,7 +160,6 @@ int handleQuestionList(char *info, char *dest) {
 
   err = sscanf(info, "%s", topic);
   if (err < 0) {
-    printf("\n0\n");
     memset(dest, 0, BUFFER_SIZE);
     sprintf(dest, "%s\n", ERROR);
     return 1;
@@ -174,7 +167,6 @@ int handleQuestionList(char *info, char *dest) {
 
   err = sprintf(path, "%s/%s", TOPICS, topic);
   if (err < 0) {
-    printf("\n1\n");
     memset(dest, 0, BUFFER_SIZE);
     sprintf(dest, "%s\n", ERROR);
     return 1;
@@ -190,7 +182,6 @@ int handleQuestionList(char *info, char *dest) {
       }
     }
   } else {
-    printf("\n2\n");
     memset(dest, 0, BUFFER_SIZE);
     sprintf(dest, "%s\n", ERROR);
     return 1;
@@ -198,17 +189,15 @@ int handleQuestionList(char *info, char *dest) {
 
   err = sprintf(user, "%s/%s", path, USER);
   if (err < 0) {
-    printf("\n3\n");
     memset(dest, 0, BUFFER_SIZE);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
 
-  qsort((void *)questions, i, 32 * sizeof(char), comparator);
+  // qsort((void *)questions, i, 32 * sizeof(char), comparator);
 
   err = sprintf(dest + strlen(dest), "%d", i);
   if (err < 0) {
-    printf("\n4\n");
     memset(dest, 0, BUFFER_SIZE);
     sprintf(dest, "%s\n", ERROR);
     return 1;
@@ -218,14 +207,12 @@ int handleQuestionList(char *info, char *dest) {
     int c = 0;
     fd = fopen(user, "r");
     if (fd == NULL) {
-      printf("\n5\n");
       memset(dest, 0, BUFFER_SIZE);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
     err = fscanf(fd, "%d", &id);
     if (err < 0) {
-      printf("\n6\n");
       memset(dest, 0, BUFFER_SIZE);
       sprintf(dest, "%s\n", ERROR);
       return 1;
@@ -233,7 +220,6 @@ int handleQuestionList(char *info, char *dest) {
     fclose(fd);
     err = sprintf(dest + strlen(dest), " %s:%d", questions[s], id);
     if (err < 0) {
-      printf("\n7\n");
       memset(dest, 0, BUFFER_SIZE);
       sprintf(dest, "%s\n", ERROR);
       return 1;
@@ -241,7 +227,6 @@ int handleQuestionList(char *info, char *dest) {
 
     err = sprintf(dest + strlen(dest), ":%d", c);
     if (err < 0) {
-      printf("\n9\n");
       memset(dest, 0, BUFFER_SIZE);
       sprintf(dest, "%s\n", ERROR);
       return 1;

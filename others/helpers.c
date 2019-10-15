@@ -28,30 +28,28 @@ int sizeOfNumber(int n) {
 
 int parseCommand(char *buffer, char *commandArgs[]) {
   char *token;
-  int i = 0, count = 0, size = strlen(buffer);
+  int i, count = 0, size = strlen(buffer);
   token = strtok(buffer, " ");
 
-  i=0;
+  i = -1; // Num of spaces = num of tokens - 1
   while ((token != NULL) && (i < COMMANDS)) {
     if (strlen(token) <= ARG_SIZE) {
       count += strlen(token);
-      strcpy(commandArgs[i], token);
-      i++;
+      strcpy(commandArgs[++i], token);
       token = strtok(NULL, " ");
-    } 
-    else {
+    } else {
       return INVALID;
     }
   }
   if ((i >= COMMANDS) && (token != NULL)) {
     return INVALID;
-  } 
-  
-  if( (count + i) != size){            //Checks if each token is separated by 1 single space.
+  }
+
+  if ((count + i) !=
+      size) { // Checks if each token is separated by 1 single space.
     printf("More spaces than expected\n");
     return INVALID;
-  }
-  else {
+  } else {
     return VALID;
   }
 }
@@ -88,8 +86,8 @@ bool fileExists(char *filename) {
   return (stat(filename, &buff) == 0);
 }
 
-char* copyFile(char* filename) {
-  char* aux = 0;
+char *copyFile(char *filename) {
+  char *aux = 0;
   char *content;
   FILE *fp;
   int size, status;
@@ -106,19 +104,19 @@ char* copyFile(char* filename) {
     return NULL;
   }
 
-  aux = (char*)malloc(size*sizeof(char));
+  aux = (char *)malloc(size * sizeof(char));
   if (aux == NULL) {
     printf("Error allocating memory.\n");
     return NULL;
   }
-  content = (char*)malloc(size*sizeof(char));
+  content = (char *)malloc(size * sizeof(char));
   if (content == NULL) {
     printf("Error allocating memory.\n");
     return NULL;
   }
 
   rewind(fp);
-  
+
   if (aux) {
     fread(aux, 1, size, fp);
     if (ferror(fp) != 0) {
