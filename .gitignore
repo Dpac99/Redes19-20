@@ -5,3 +5,4 @@ client_tcp
 server_udp
 server_tcp
 .vscode
+bin
