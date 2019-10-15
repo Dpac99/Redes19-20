@@ -72,11 +72,13 @@
 #define MAX_QUESTIONS				99
 #define MAX_ANSWERS					99
 #define USER_ID_SIZE				5
-#define VALID					 	1
-#define INVALID				 	 	0
 #define REGISTER_REG_LENGTH		 	6	// after register/reg: " *****"
 #define TOPIC_LIST_LENGTH		 	0 	// after topic_list/tl: ""
 #define QUESTION_LIST_LENGTH		0 	// after question_list/ql: ""
+
+#define VALID					 	1
+#define INVALID				 	 	0
+#define ERR							-1
 
 struct User{
 	int userId;

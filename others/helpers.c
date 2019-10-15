@@ -47,7 +47,7 @@ int parseCommand(char *buffer, char *commandArgs[]) {
     return INVALID;
   } 
   
-  if( (count + i) != size){            //Checks if each token is separated by 1 single space.
+  if( (count + i ) != size){              //Checks if each token is separated by 1 single space.
     printf("More spaces than expected\n");
     return INVALID;
   }

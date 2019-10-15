@@ -80,7 +80,7 @@ void topicSelect(char *buffer, int flag, struct User *user){
 				if(num <= 0 || num > MAX_TOPICS)
 					printf("Invalid command format.\n");
 				else{
-					user->selected_topic = user->topics[num - 1];
+					strcpy(user->selected_topic, user->topics[num - 1]);
 					status = VALID;
 				}
 			}
@@ -92,7 +92,7 @@ void topicSelect(char *buffer, int flag, struct User *user){
 			else{
 				for(i = 0; i < n_topics; i++){
 					if( strcmp(user->topics[i], topic) == 0){
-						user->selected_topic = user->topics[i];
+						strcpy(user->selected_topic, user->topics[i]);
 						status = VALID;
 						break;
 					}
@@ -165,41 +165,63 @@ int questionList(char *buffer, struct User *user){
 	return VALID;
 }
 
-void questionGet(char *buffer, int flag, struct User *user){	//TODO: get question from the question list
+int questionGet(char *buffer, int flag, struct User *user, char aux_question[]){	//TODO: get question from the question list
 	char *token;
-	int num, buffer_size;
-	char* question;
+	int i, status = INVALID, num, buffer_size, n_questions = user->num_questions;
+	char *question;
 
 	buffer_size = strlen(buffer);
 	token = strtok(buffer, " ");
 	
 	if(token == NULL) {
 		printf("Invalid command format.\n");
-		return;
+		return INVALID;
 	}
 
 	if((buffer_size - strlen(token)) > 1) {
 		printf("Invalid command format.\n");
-		return;
+		return INVALID;
 	}
 
 	if(flag) {	// input "qg num"
-		num = isnumber(token);
-		if(num <= 0 || num > MAX_QUESTIONS) {
+		if(isnumber(token)){
+			num = atoi(token);
+			if(num <= 0) {
+				printf("Invalid command format.\n");
+				return INVALID;
+			}
+			if(num > n_questions){
+				printf("Question number '%d' doesn't exist. Try again.\n", num);
+			}
+			question = user->questions[num - 1]; 
+		}
+		else{
 			printf("Invalid command format.\n");
-			return;
+			return INVALID;
 		}
 	}
 	else {		// input "question_get topic"
 		question = token;
 		if(strlen(question) > QUESTION_SIZE || (token = strtok(NULL, " ")) != NULL) {
 			printf("Invalid command format.\n");
-			return;
+			return INVALID;
 		}
-		user->selected_question = question;
-	}
+		for(i = 0; i < n_questions; i++){
+			if( strcmp(user->questions[i], question) == 0){
+				question = user->questions[i];
+				status = VALID;
+				break;
+			}
+		}
+		if(status == INVALID)
+			printf("Question %s doesn't exist. Try again.\n", question);
 
+	}
+	strcpy(aux_question, question);
 	memset(buffer, 0, BUFFER_SIZE);
+	sprintf(buffer, "%s %s %s\n", GET_QUESTION, user->selected_topic, aux_question);
+
+	return VALID;
 }
 
 int questionSubmit(struct User *user, char *commandArgs[]){	//TODO: check number of spaces
@@ -256,7 +278,6 @@ int questionSubmit(struct User *user, char *commandArgs[]){	//TODO: check number
 	for (i = 0; i < COMMANDS; i++) {
 		memset(commandArgs[i], 0, ARG_SIZE);
 	}
-	
 	return VALID;
 }
 
