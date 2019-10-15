@@ -512,7 +512,7 @@ int parseSubmitQuestion(char *info, int *id, char *topic, char *question,
                         char *iData) {
 
   int infoSize = strlen(info);
-  int i = 0, err, spaces = 0, total = 0;
+  int i = 0, err, total = 0;
   char rest[BUFFER_SIZE];
 
   char *token = strtok(info, " ");
@@ -546,17 +546,19 @@ int parseSubmitQuestion(char *info, int *id, char *topic, char *question,
 
   *qIMG = info[total] - '0';
 
-  total += sizeOfNumber(*qIMG);
+  total += sizeOfNumber(*qIMG) + 1;
   if (*qIMG == 1) {
     for (int j = 0; total + j < infoSize; j++) {
       rest[j] = info[total + j];
     }
 
+    printf("rest=%s\n", rest);
+
     err = sscanf("%s %d", ext, iSize);
     if (err != 2) {
+      printf("1\n");
       return 1;
     }
-    spaces += 2;
 
     total += strlen(ext) + sizeOfNumber(*iSize) + 2;
 
@@ -794,7 +796,7 @@ int parseSubmitAnswer(char *info, int *id, char *topic, char *question,
                       char *iData) {
 
   int infoSize = strlen(info);
-  int i = 0, err, spaces = 0, total = 0;
+  int i = 0, err, total = 0;
   char rest[BUFFER_SIZE];
 
   char *token = strtok(info, " ");
@@ -828,17 +830,11 @@ int parseSubmitAnswer(char *info, int *id, char *topic, char *question,
 
   *qIMG = info[total] - '0';
 
-  total += sizeOfNumber(*qIMG);
+  total += sizeOfNumber(*qIMG) + 1;
   if (*qIMG == 1) {
     for (int j = 0; total + j < infoSize; j++) {
       rest[j] = info[total + j];
     }
-
-    err = sscanf("%s %d", ext, iSize);
-    if (err != 2) {
-      return 1;
-    }
-    spaces += 2;
 
     total += strlen(ext) + sizeOfNumber(*iSize) + 2;
 

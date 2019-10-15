@@ -38,7 +38,7 @@ int handleTopicList(char *info, char *dest) {
     return 1;
   }
 
-  qsort((void *)files, i, 32 * sizeof(char), comparator);
+  // qsort((void *)files, i, 32 * sizeof(char), comparator);
 
   err = sprintf(dest + strlen(dest), "%d", i);
   if (err < 0) {
@@ -194,7 +194,7 @@ int handleQuestionList(char *info, char *dest) {
     return 1;
   }
 
-  qsort((void *)questions, i, 32 * sizeof(char), comparator);
+  // qsort((void *)questions, i, 32 * sizeof(char), comparator);
 
   err = sprintf(dest + strlen(dest), "%d", i);
   if (err < 0) {

@@ -28,15 +28,14 @@ int sizeOfNumber(int n) {
 
 int parseCommand(char *buffer, char *commandArgs[]) {
   char *token;
-  int i = 0, count = 0, size = strlen(buffer);
+  int i, count = 0, size = strlen(buffer);
   token = strtok(buffer, " ");
 
-  i = 0;
+  i = -1; // Num of spaces = num of tokens - 1
   while ((token != NULL) && (i < COMMANDS)) {
     if (strlen(token) <= ARG_SIZE) {
       count += strlen(token);
-      strcpy(commandArgs[i], token);
-      i++;
+      strcpy(commandArgs[++i], token);
       token = strtok(NULL, " ");
     } else {
       return INVALID;

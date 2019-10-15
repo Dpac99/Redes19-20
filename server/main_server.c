@@ -89,7 +89,6 @@ int tcpHandler(char *buffer) {
   memset(buffer, 0, BUFFER_SIZE);
 
   if (strcmp(command, GET_QUESTION) == 0) {
-    printf("Submitting\n");
     return handleGetQuestion(info, buffer);
   } else if (strcmp(command, SUBMIT_QUESTION) == 0) {
     return handleSubmitQuestion(info, buffer);
@@ -106,6 +105,7 @@ void tcpCommunicate(int sockfd) {
   int n, nsent;
   char buffer[BUFFER_SIZE], *ptr;
   memset(buffer, 0, BUFFER_SIZE);
+
   n = recv(sockfd, buffer, BUFFER_SIZE, 0);
   if (n == -1) {
     close(sockfd);
@@ -114,13 +114,13 @@ void tcpCommunicate(int sockfd) {
     exit(flag);
   }
 
-  printf("Received: %s", buffer);
+  printf("\tRECEIVED: %s", buffer);
 
   tcpHandler(buffer);
   n = strlen(buffer);
 
   ptr = &buffer[0];
-  printf("SENT: %s", buffer);
+  printf("\tSENT: %s", buffer);
 
   while (n > 0) {
     if ((nsent = write(sockfd, ptr, n)) <= 0) {
@@ -292,14 +292,14 @@ int main(int argc, char *argv[]) {
 
       getnameinfo((struct sockaddr *)&addr, addrlen, host, sizeof(host),
                   service, sizeof service, 0);
-      printf("Received: %sfrom[%s:%s]\n\n", buffer, host, service);
+      printf("[+]UDP Communication: Client[%s@%s]\n", host, service);
+      printf("\tRECEIVED: %s", buffer);
 
       int err = udpHandler(buffer);
 
       int size = strlen(buffer);
 
-      write(1, "SENT: ", 6);
-      write(1, buffer, size);
+      printf("\tSENT: %s", buffer);
 
       nsent =
           sendto(udp_fd, buffer, size, 0, (struct sockaddr *)&addr, addrlen);
@@ -310,7 +310,6 @@ int main(int argc, char *argv[]) {
           printf("Error with sendto: %d\n", errno);
         exit(flag);
       }
-      write(1, "\n", 1);
 
       if (err != 0) {
         close(tcp_fd);
@@ -319,6 +318,7 @@ int main(int argc, char *argv[]) {
           printf("Error with handlers");
         exit(flag);
       }
+      printf("[+]End of UDP with client[%s@%s]\n\n", host, service);
     }
 
     if (FD_ISSET(tcp_fd, &rfds)) {
@@ -344,8 +344,12 @@ int main(int argc, char *argv[]) {
             printf("Error with accept tcp\n");
           exit(flag);
         }
+        getnameinfo((struct sockaddr *)&addr, addrlen, host, sizeof(host),
+                    service, sizeof service, 0);
+        printf("[+]TCP Communication: Client[%s@%s]\n", host, service);
         tcpCommunicate(resp_fd);
         close(resp_fd);
+        printf("[+]End of TCP with client[%s@%s]\n\n", host, service);
         exit(0);
       }
 

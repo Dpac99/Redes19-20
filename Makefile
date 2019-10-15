@@ -1,3 +1,4 @@
+all: main_client main_server
 main_server:
 	gcc -g -o main_server -Wall server/* others/*
 main_client:	
