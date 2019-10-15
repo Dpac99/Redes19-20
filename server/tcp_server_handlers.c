@@ -1,8 +1,6 @@
 #include "../others/consts.h"
 #include "../others/helpers.h"
 
-// TODO: Fix QuestionGet with images
-
 int parseGetQuestion(char *info, char *topic, char *question) {
   int infoSize = strlen(info);
   int i, j = 0;
@@ -129,13 +127,12 @@ int handleGetQuestion(char *info, char *dest) {
       return 1;
     }
 
-    fread(data, sizeof(char), size + 1, f);
-    if (feof(f) == 0) {
-
-      memset(dest, 0, BUFFER_SIZE);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
+    int nread = 0;
+    for (; nread < size; nread++) {
+      data[nread] = fgetc(f);
     }
+
+    data[nread] = '\0';
 
     fclose(f);
 
@@ -225,13 +222,12 @@ int handleGetQuestion(char *info, char *dest) {
         return 1;
       }
 
-      fread(data, sizeof(char), size, f);
-      if (feof(f) == 0) {
-
-        memset(dest, 0, BUFFER_SIZE);
-        sprintf(dest, "%s\n", ERROR);
-        return 1;
+      int s = 0;
+      for (; s < size; s++) {
+        data[s] = fgetc(f);
       }
+
+      data[s] = '\0';
 
       fclose(f);
 
@@ -283,11 +279,14 @@ int handleGetQuestion(char *info, char *dest) {
 
   if (i > 10) {
     limit = i - 9;
-    sprintf(dest + strlen(dest), "%d ", 10);
+    err = sprintf(dest + strlen(dest), "%d", 10);
   } else {
-    limit = 0;
-    i ? sprintf(dest + strlen(dest), "%d ", i)
-      : sprintf(dest + strlen(dest), "%d", i);
+    err = sprintf(dest + strlen(dest), "%d", i);
+  }
+  if (err < 0) {
+    memset(dest, 0, BUFFER_SIZE);
+    sprintf(dest, "%s\n", ERROR);
+    return 1;
   }
 
   // Last 10 (all answers are filed as answer_XX, so the last will be the most
@@ -306,7 +305,7 @@ int handleGetQuestion(char *info, char *dest) {
     char a0 = answers[i - 1][strlen("ANSWER_")];
     char a1 = answers[i - 1][strlen("ANSWER_") + 1];
 
-    err = sprintf(dest + strlen(dest), "%c%c ", a0, a1);
+    err = sprintf(dest + strlen(dest), " %c%c ", a0, a1);
     if (err < 0) {
       memset(dest, 0, BUFFER_SIZE);
       sprintf(dest, "%s\n", ERROR);
@@ -476,18 +475,17 @@ int handleGetQuestion(char *info, char *dest) {
           return 1;
         }
 
-        fread(data, sizeof(char), size, f);
-        if (feof(f) == 0) {
-
-          memset(dest, 0, BUFFER_SIZE);
-          sprintf(dest, "%s\n", ERROR);
-          return 1;
+        int nread = 0;
+        for (; nread < size; nread++) {
+          data[nread] = fgetc(f);
         }
+
+        data[nread] = '\0';
 
         fclose(f);
 
         // Print image
-        err = sprintf(dest + strlen(dest), " %s %d %s ", ext, (int)size, data);
+        err = sprintf(dest + strlen(dest), " %s %d %s", ext, (int)size, data);
         if (err < 0) {
 
           memset(dest, 0, BUFFER_SIZE);
@@ -510,8 +508,8 @@ int handleGetQuestion(char *info, char *dest) {
 }
 
 int parseSubmitQuestion(char *info, int *id, char *topic, char *question,
-                        int *size, char *data, int *qIMG, char *ext, int *iSize,
-                        char *iData) {
+                        int *size, char **data, int *qIMG, char *ext,
+                        int *iSize, char **iData) {
 
   int infoSize = strlen(info);
   int i = 0, total = 0;
@@ -538,17 +536,23 @@ int parseSubmitQuestion(char *info, int *id, char *topic, char *question,
       token = strtok(NULL, " ");
   }
 
+  *data = (char *)malloc((*size + 1) * sizeof(char));
+  if (*data == NULL) {
+    return 1;
+  }
+
   total += strlen(topic) + strlen(question) + sizeOfNumber(*id) +
            sizeOfNumber(*size) + 4;
 
-  for (int v = 0; v < *size; v++) {
-    data[v] = info[total + v];
+  int v = 0;
+  for (; v < *size; v++) {
+    (*data)[v] = info[total + v];
   }
-  total += strlen(data) + 1;
+
+  (*data)[v] = '\0';
+  total += strlen(*data) + 1;
 
   *qIMG = info[total] - '0';
-
-  printf("%c -> %d\n", info[total], *qIMG);
 
   total += sizeOfNumber(*qIMG) + 1;
   if (*qIMG == 1) {
@@ -564,11 +568,18 @@ int parseSubmitQuestion(char *info, int *id, char *topic, char *question,
     int subtotal = strlen(ext) + sizeOfNumber(*iSize) + 2;
     total += subtotal;
 
-    for (int k = 0; k < *iSize; k++) {
-      iData[k] = rest[subtotal + k];
+    *iData = (char *)malloc((*iSize + 1) * sizeof(char));
+    if (*iData == NULL) {
+      return 1;
     }
 
-    total += strlen(iData);
+    int k;
+    for (k = 0; k < *iSize; k++) {
+      (*iData)[k] = rest[subtotal + k];
+    }
+    (*iData)[k] = '\0';
+
+    total += strlen(*iData);
   }
 
   total++;
@@ -586,7 +597,7 @@ int parseSubmitQuestion(char *info, int *id, char *topic, char *question,
 
 int handleSubmitQuestion(char *info, char *dest) {
 
-  char topic[16], question[16], data[BUFFER_SIZE], ext[4], idata[BUFFER_SIZE];
+  char topic[16], question[16], *data, ext[4], *idata;
   char path[BUFFER_SIZE], filename[2 * BUFFER_SIZE];
   int id, size, qIMG, iSize, err, fileN = 0;
   FILE *f;
@@ -599,8 +610,8 @@ int handleSubmitQuestion(char *info, char *dest) {
     return 1;
   }
 
-  err = parseSubmitQuestion(info, &id, topic, question, &size, data, &qIMG, ext,
-                            &iSize, idata);
+  err = parseSubmitQuestion(info, &id, topic, question, &size, &data, &qIMG,
+                            ext, &iSize, &idata);
   if (err > 0) {
     sprintf(dest + strlen(dest), "%s\n", END_OF_FILE);
     return 0;
@@ -796,8 +807,8 @@ int handleSubmitQuestion(char *info, char *dest) {
 }
 
 int parseSubmitAnswer(char *info, int *id, char *topic, char *question,
-                      int *size, char *data, int *qIMG, char *ext, int *iSize,
-                      char *iData) {
+                      int *size, char **data, int *qIMG, char *ext, int *iSize,
+                      char **iData) {
 
   int infoSize = strlen(info);
   int i = 0, total = 0;
@@ -824,13 +835,21 @@ int parseSubmitAnswer(char *info, int *id, char *topic, char *question,
       token = strtok(NULL, " ");
   }
 
+  *data = (char *)malloc((*size + 1) * sizeof(char));
+  if (*data == NULL) {
+    return 1;
+  }
+
   total += strlen(topic) + strlen(question) + sizeOfNumber(*id) +
            sizeOfNumber(*size) + 4;
 
-  for (int v = 0; v < *size; v++) {
-    data[v] = info[total + v];
+  int v = 0;
+  for (; v < *size; v++) {
+    (*data)[v] = info[total + v];
   }
-  total += strlen(data) + 1;
+
+  (*data)[v] = '\0';
+  total += strlen(*data) + 1;
 
   *qIMG = info[total] - '0';
 
@@ -846,11 +865,20 @@ int parseSubmitAnswer(char *info, int *id, char *topic, char *question,
     *iSize = atoi(token);
 
     int subtotal = strlen(ext) + sizeOfNumber(*iSize) + 2;
-    total + subtotal;
+    total += subtotal;
 
-    for (int k = 0; k < *iSize; k++) {
-      iData[k] = rest[subtotal + k];
+    *iData = (char *)malloc((*iSize + 1) * sizeof(char));
+    if (*iData == NULL) {
+      return 1;
     }
+
+    int k;
+    for (k = 0; k < *iSize; k++) {
+      (*iData)[k] = rest[subtotal + k];
+    }
+    (*iData)[k] = '\0';
+
+    total += strlen(*iData);
   }
 
   total++;
@@ -868,7 +896,7 @@ int parseSubmitAnswer(char *info, int *id, char *topic, char *question,
 
 int handleSubmitAnswer(char *info, char *dest) {
 
-  char topic[16], question[16], data[BUFFER_SIZE], ext[4], idata[BUFFER_SIZE];
+  char topic[16], question[16], *data, ext[4], *idata;
   char path[BUFFER_SIZE], filename[2 * BUFFER_SIZE];
   int id, size, qIMG, iSize, err, fileN = 0;
   FILE *f;
@@ -881,8 +909,8 @@ int handleSubmitAnswer(char *info, char *dest) {
     return 1;
   }
 
-  err = parseSubmitAnswer(info, &id, topic, question, &size, data, &qIMG, ext,
-                          &iSize, idata);
+  err = parseSubmitAnswer(info, &id, topic, question, &size, &data, &qIMG, ext,
+                          &iSize, &idata);
   if (err > 0) {
     sprintf(dest + strlen(dest), "%s\n", END_OF_FILE);
     return 0;
