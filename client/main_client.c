@@ -6,6 +6,7 @@
 void parseArgs(int argc, char *argv[], char *port, char *server_IP);
 int readCommand(char *buffer);
 struct User *initUser();
+struct Submission *initSubmission();
 int communicateUDP(char *buffer, int fd, struct addrinfo *res,
                    struct sockaddr_in addr);
 
@@ -17,10 +18,12 @@ int main(int argc, char *argv[]) {
   struct addrinfo hints, *res;
   struct sockaddr_in addr;
   struct User *user;
+  struct Submission *submission;
   char buffer[BUFFER_SIZE], **commandArgs, *port, *server_IP, command[COMMAND_SIZE];
   char topic[TOPIC_SIZE];
 
   user = initUser();
+  submission = initSubmission();
   port = (char *)malloc(16);
   if (port == NULL) {
     printf("Error allocating memory.\n");
@@ -147,22 +150,12 @@ int main(int argc, char *argv[]) {
 
     else if ((strcmp(command, "question_submit") == 0) ||
              (strcmp(command, "qs") == 0)) {
-      // Clean commandArgs for this specific command
-      // for(int i = 0; i < 2; i++){
-		  //   memset(commandArgs[i], 0, ARG_SIZE);
-	    //   }
-      //memset(commandArgs[2], 0, ARG_SIZE);
       parseCommand(buffer, commandArgs);
-      status = questionSubmit(user, commandArgs);
+      status = questionSubmit(user, commandArgs, submission);
     }
 
     else if ((strcmp(command, "answer_submit") == 0) ||
              (strcmp(command, "as") == 0)) {
-      // Clean commandArgs for this specific command
-      // for(int i = 0; i < 2; i++){
-		  //   memset(commandArgs[i], 0, ARG_SIZE);
-	    //   }
-      //memset(commandArgs[2], 0, ARG_SIZE);
       parseCommand(buffer, commandArgs);
       status = answerSubmit(user, commandArgs);
     }
@@ -295,4 +288,19 @@ struct User *initUser(){
     }
   }
   return user;
+}
+
+struct Submission *initSubmission() {
+  struct Submission *submission = (struct Submission *)malloc(sizeof(struct Submission));
+  if (submission == NULL) {
+    printf("Error allocating memory.\n");
+    exit(1);
+  }
+
+  submission->text_name = NULL;
+  submission->text_content = NULL;
+  submission->image_name = NULL;
+  submission->image_content = NULL;
+
+  return submission;
 }

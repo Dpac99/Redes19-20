@@ -10,7 +10,7 @@ void topicSelect(char *buffer, int flag, struct User *user);
 int topicPropose(char *buffer, struct User *user, char *topic);
 int questionList(char *buffer, struct User *user);
 void questionGet(char *buffer, int flag, struct User *user);
-int questionSubmit(struct User *user, char *commandArgs[]);
+int questionSubmit(struct User *user, char *commandArgs[], struct Submission* submission);
 int answerSubmit(struct User *user, char *commandArgs[]);
 
 #endif

@@ -202,7 +202,7 @@ void questionGet(char *buffer, int flag, struct User *user){	//TODO: get questio
 	memset(buffer, 0, BUFFER_SIZE);
 }
 
-int questionSubmit(struct User *user, char *commandArgs[]){	//TODO: check number of spaces
+int questionSubmit(struct User *user, char *commandArgs[], struct Submission* submission){
 	int i, imageExists = FALSE;
 	char *aux;
 	char *question;
@@ -211,6 +211,15 @@ int questionSubmit(struct User *user, char *commandArgs[]){	//TODO: check number
 	char *ext;
 	char *filename = (char*)malloc(BUFFER_SIZE * sizeof(char));
 	char *imagename = (char*)malloc(BUFFER_SIZE * sizeof(char));
+
+	if (filename == NULL) {
+		printf("Error allocating memory.\n");
+    	return INVALID;
+	}
+	if (imagename == NULL) {
+		printf("Error allocating memory.\n");
+    	return INVALID;
+	}
 
 	if(strcmp(user->selected_topic, "") == 0) {
 		printf("No selected topic.\n");
@@ -258,9 +267,47 @@ int questionSubmit(struct User *user, char *commandArgs[]){	//TODO: check number
 		memset(commandArgs[i], 0, ARG_SIZE);
 	}
 
-	copyFile(filename);
+	// Save text file name and content
+	aux = copyFile(filename);
+	if (aux == NULL) {
+		return INVALID;
+	}
+	submission->text_name = (char*)malloc(strlen(filename) * sizeof(char));
+	if (submission->text_name == NULL) {
+		printf("Error allocating memory.\n");
+    	return INVALID;
+	}
+	submission->text_content = (char*)malloc(strlen(aux) * sizeof(char));
+	if (submission->text_content == NULL) {
+		printf("Error allocating memory.\n");
+    	return INVALID;
+	}
+	strcpy(submission->text_name, filename);
+	strcpy(submission->text_content, aux);
+
+	// Save image file name and content
 	if (imageExists)
-		copyFile(imagename);
+		aux = copyFile(imagename);
+	if (aux == NULL) {
+		return INVALID;
+	}
+	submission->image_name = (char*)malloc(strlen(imagename) * sizeof(char));
+	if (submission->image_name == NULL) {
+		printf("Error allocating memory.\n");
+    	return INVALID;
+	}
+	submission->image_content = (char*)malloc(strlen(aux) * sizeof(char));
+	if (submission->image_content == NULL) {
+		printf("Error allocating memory.\n");
+    	return INVALID;
+	}
+	strcpy(submission->image_name, imagename);
+	strcpy(submission->image_content, aux);
+	checkFileContent(submission);
+
+	free(aux);
+	free(filename);
+	free(imagename);
 	
 	return VALID;
 }

@@ -89,8 +89,10 @@ struct User{
 };
 
 struct Submission {
-	char *filename;
-	char *content;
+	char* text_name;
+	char* text_content;
+	char* image_name;
+	char *image_content;
 };
 
 #endif

@@ -128,7 +128,7 @@ char* copyFile(char* filename) {
   }
 
   strcpy(content, aux);
-  printf("%s", content);
+  printf("##############################CONTENT:%s\n", content);
   free(aux);
 
   status = fclose(fp);
@@ -138,3 +138,15 @@ char* copyFile(char* filename) {
   }
   return content;
 }
+
+// void checkFileContent(struct Submission* submission) {
+//   FILE* fp = fopen("testfile", "w");
+//   int i = 0;
+//   if (fp != NULL) {
+//     while (submission->image_content[i] != EOF) {
+//       fputc(submission->image_content[i], fp);
+//       i++;
+//     }
+//     fclose(fp);
+//   }
+// }
