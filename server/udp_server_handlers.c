@@ -156,7 +156,9 @@ int handleQuestionList(char *info, char *dest) {
   DIR *dir;
   struct dirent *ent;
   int i = 0, id, err, c;
-  FILE *fd = NULL;
+  FILE *f = NULL;
+  char question[BUFFER_SIZE / 2];
+  char filename[BUFFER_SIZE];
 
   err = sscanf(info, "%s", topic);
   if (err < 0) {
@@ -165,6 +167,7 @@ int handleQuestionList(char *info, char *dest) {
     return 1;
   }
 
+  // Build path to topic dir
   err = sprintf(path, "%s/%s", TOPICS, topic);
   if (err < 0) {
     memset(dest, 0, BUFFER_SIZE);
@@ -173,11 +176,11 @@ int handleQuestionList(char *info, char *dest) {
   }
   sprintf(dest, "%s ", QUESTION_LIST_RESPONSE);
 
+  // Read all questions from topic
   if ((dir = opendir(path)) != NULL) {
     while ((ent = readdir(dir)) != NULL && i < 100) {
       if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0 &&
           strcmp(ent->d_name, USER) != 0) {
-        c++;
         strcpy(questions[i++], ent->d_name);
       }
     }
@@ -204,28 +207,50 @@ int handleQuestionList(char *info, char *dest) {
   }
 
   for (int s = 0; s < i; s++) {
-    int c = 0;
-    fd = fopen(user, "r");
-    if (fd == NULL) {
-      memset(dest, 0, BUFFER_SIZE);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-    err = fscanf(fd, "%d", &id);
+    c = 0;
+    // path to question dir
+    memset(question, 0, 16);
+    err = sprintf(question, "%s/%s/%s", TOPICS, topic, questions[s]);
     if (err < 0) {
       memset(dest, 0, BUFFER_SIZE);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
-    fclose(fd);
-    err = sprintf(dest + strlen(dest), " %s:%d", questions[s], id);
+    err = sprintf(filename, "%s/%s/%s", question, DATA, USER);
     if (err < 0) {
       memset(dest, 0, BUFFER_SIZE);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
 
-    err = sprintf(dest + strlen(dest), ":%d", c);
+    f = fopen(filename, "r");
+    if (f == NULL) {
+      memset(dest, 0, BUFFER_SIZE);
+      sprintf(dest, "%s\n", ERROR);
+      return 1;
+    }
+    err = fscanf(f, "%d", &id);
+    fclose(f);
+    if (err <= 0) {
+      memset(dest, 0, BUFFER_SIZE);
+      sprintf(dest, "%s\n", ERROR);
+      return 1;
+    }
+
+    if ((dir = opendir(question)) != NULL) {
+      while ((ent = readdir(dir)) != NULL && i < 100) {
+        if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0 &&
+            strcmp(ent->d_name, DATA) != 0) {
+          c++;
+        }
+      }
+    } else {
+      memset(dest, 0, BUFFER_SIZE);
+      sprintf(dest, "%s\n", ERROR);
+      return 1;
+    }
+
+    err = sprintf(dest + strlen(dest), " %s:%d:%d", questions[s], id, c);
     if (err < 0) {
       memset(dest, 0, BUFFER_SIZE);
       sprintf(dest, "%s\n", ERROR);

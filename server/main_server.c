@@ -65,12 +65,12 @@ int udpHandler(char *buffer) {
   return 0;
 }
 
-int tcpHandler(char *buffer) {
-  int size = strlen(buffer);
+int tcpHandler(char *buffer, long size) {
   char command[4], info[size - 3];
   int i;
 
-  if (buffer[size - 1] != '\n') {
+  if (buffer[strlen(buffer) - 1] != '\n') {
+    printf("here");
     memset(buffer, 0, BUFFER_SIZE);
     sprintf(buffer, "%s\n", ERROR);
     return 0;
@@ -89,11 +89,11 @@ int tcpHandler(char *buffer) {
   memset(buffer, 0, BUFFER_SIZE);
 
   if (strcmp(command, GET_QUESTION) == 0) {
-    return handleGetQuestion(info, buffer);
+    return handleGetQuestion(info, buffer, size);
   } else if (strcmp(command, SUBMIT_QUESTION) == 0) {
-    return handleSubmitQuestion(info, buffer);
+    return handleSubmitQuestion(info, buffer, size);
   } else if (strcmp(command, SUBMIT_ANSWER) == 0) {
-    return handleSubmitAnswer(info, buffer);
+    return handleSubmitAnswer(info, buffer, size);
   } else {
     sprintf(buffer, "%s\n", ERROR);
   }
@@ -102,21 +102,47 @@ int tcpHandler(char *buffer) {
 }
 
 void tcpCommunicate(int sockfd) {
-  int n, nsent;
-  char buffer[BUFFER_SIZE], *ptr;
-  memset(buffer, 0, BUFFER_SIZE);
+  int n, nsent, nread;
+  char *buffer, *ptr, readBuf[BUFFER_SIZE];
+  long currsize = BUFFER_SIZE;
+  fd_set mask;
+  struct timeval timeout;
+  timeout.tv_sec = 0;
+  timeout.tv_usec = 0;
 
-  n = recv(sockfd, buffer, BUFFER_SIZE, 0);
-  if (n == -1) {
+  buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
+  if (buffer == NULL) {
     close(sockfd);
-    if (flag)
-      printf("Error with read: %d\n", errno);
     exit(flag);
   }
 
+  memset(buffer, 0, BUFFER_SIZE);
+
+  FD_SET(sockfd, &mask);
+
+  do {
+    nread = read(sockfd, readBuf, BUFFER_SIZE);
+    if (nread == -1) {
+      close(sockfd);
+      if (flag)
+        printf("Error with read: %d\n", errno);
+      exit(flag);
+    }
+
+    if (strlen(buffer) + nread >= currsize) {
+      buffer = (char *)realloc(buffer, currsize * currsize * sizeof(char));
+      currsize *= currsize;
+    }
+    strcat(buffer, readBuf);
+    memset(readBuf, 0, BUFFER_SIZE);
+    FD_ZERO(&mask);
+    FD_SET(sockfd, &mask);
+    printf("%d\n", nread);
+  } while (select(sockfd + 1, &mask, NULL, NULL, &timeout) && nread);
+
   printf("\tRECEIVED: %s", buffer);
 
-  tcpHandler(buffer);
+  tcpHandler(buffer, currsize);
   n = strlen(buffer);
 
   ptr = &buffer[0];

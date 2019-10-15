@@ -25,7 +25,7 @@ int parseGetQuestion(char *info, char *topic, char *question) {
   return 0;
 }
 
-int handleGetQuestion(char *info, char *dest) {
+int handleGetQuestion(char *info, char *dest, long destsize) {
   char topic[16], question[16], path[64], filename[128], *data, ext[4];
   char answers[100][32];
   FILE *f;
@@ -48,7 +48,7 @@ int handleGetQuestion(char *info, char *dest) {
   // Build path to topic/question/data dir
   err = sprintf(path, "%s/%s/%s/%s", TOPICS, topic, question, DATA);
   if (err < 0) {
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -62,7 +62,7 @@ int handleGetQuestion(char *info, char *dest) {
   // Read uid of question
   err = sprintf(filename, "%s/%s", path, USER);
   if (err < 0) {
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -70,7 +70,7 @@ int handleGetQuestion(char *info, char *dest) {
   if (access(filename, F_OK) == 0) {
     f = fopen(filename, "r");
     if (f == NULL) {
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -78,14 +78,14 @@ int handleGetQuestion(char *info, char *dest) {
     err = fscanf(f, "%d", &uid);
     if (err == EOF) {
       fclose(f);
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
     fclose(f);
   } else {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -93,7 +93,7 @@ int handleGetQuestion(char *info, char *dest) {
   err = sprintf(dest + strlen(dest), "%d ", uid);
   if (err < 0) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -102,7 +102,7 @@ int handleGetQuestion(char *info, char *dest) {
   err = sprintf(filename, "%s/%s", path, Q_INFO);
   if (err < 0) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -114,7 +114,7 @@ int handleGetQuestion(char *info, char *dest) {
     data = (char *)malloc(sizeof(char) * (size + 1));
     if (data == NULL) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -122,7 +122,7 @@ int handleGetQuestion(char *info, char *dest) {
     f = fopen(filename, "r");
     if (f == NULL) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -140,7 +140,7 @@ int handleGetQuestion(char *info, char *dest) {
     err = sprintf(dest + strlen(dest), "%d %s ", (int)size, data);
     if (err < 0) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -148,7 +148,7 @@ int handleGetQuestion(char *info, char *dest) {
     free(data);
   } else {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -158,7 +158,7 @@ int handleGetQuestion(char *info, char *dest) {
   err = sprintf(filename, "%s/%s", path, IMG_DATA);
   if (err < 0) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -167,7 +167,7 @@ int handleGetQuestion(char *info, char *dest) {
     f = fopen(filename, "r");
     if (f == NULL) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -177,7 +177,7 @@ int handleGetQuestion(char *info, char *dest) {
     fclose(f);
   } else {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -185,7 +185,7 @@ int handleGetQuestion(char *info, char *dest) {
   err = sprintf(dest + strlen(dest), "%d ", qIMG);
   if (err < 0) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -197,7 +197,7 @@ int handleGetQuestion(char *info, char *dest) {
     err = sprintf(filename, "%s/%s.%s", path, IMG, ext);
     if (err < 0) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -209,7 +209,7 @@ int handleGetQuestion(char *info, char *dest) {
       data = (char *)malloc(sizeof(char) * (size + 1));
       if (data == NULL) {
 
-        memset(dest, 0, BUFFER_SIZE);
+        memset(dest, 0, destsize);
         sprintf(dest, "%s\n", ERROR);
         return 1;
       }
@@ -217,7 +217,7 @@ int handleGetQuestion(char *info, char *dest) {
       f = fopen(filename, "r");
       if (f == NULL) {
 
-        memset(dest, 0, BUFFER_SIZE);
+        memset(dest, 0, destsize);
         sprintf(dest, "%s\n", ERROR);
         return 1;
       }
@@ -234,7 +234,7 @@ int handleGetQuestion(char *info, char *dest) {
       err = sprintf(dest + strlen(dest), "%s %d %s ", ext, (int)size, data);
       if (err < 0) {
 
-        memset(dest, 0, BUFFER_SIZE);
+        memset(dest, 0, destsize);
         sprintf(dest, "%s\n", ERROR);
         return 1;
       }
@@ -242,7 +242,7 @@ int handleGetQuestion(char *info, char *dest) {
       free(data);
     } else {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -252,7 +252,7 @@ int handleGetQuestion(char *info, char *dest) {
   err = sprintf(filename, "%s/%s/%s", TOPICS, topic, question);
   if (err < 0) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -270,7 +270,7 @@ int handleGetQuestion(char *info, char *dest) {
     }
   } else {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -284,7 +284,7 @@ int handleGetQuestion(char *info, char *dest) {
     err = sprintf(dest + strlen(dest), "%d", i);
   }
   if (err < 0) {
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -297,7 +297,7 @@ int handleGetQuestion(char *info, char *dest) {
                   answers[i - 1]);
     if (err < 0) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -307,7 +307,7 @@ int handleGetQuestion(char *info, char *dest) {
 
     err = sprintf(dest + strlen(dest), " %c%c ", a0, a1);
     if (err < 0) {
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -319,7 +319,7 @@ int handleGetQuestion(char *info, char *dest) {
     memset(answer, 0, BUFFER_SIZE);
     err = sprintf(answer, "%s/%s", filename, USER);
     if (err < 0) {
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -330,14 +330,14 @@ int handleGetQuestion(char *info, char *dest) {
       f = fopen(answer, "r");
       if (f == NULL) {
 
-        memset(dest, 0, BUFFER_SIZE);
+        memset(dest, 0, destsize);
         sprintf(dest, "%s\n", ERROR);
         return 1;
       }
 
       err = fscanf(f, "%d", &aUID);
       if (err < 1) {
-        memset(dest, 0, BUFFER_SIZE);
+        memset(dest, 0, destsize);
         sprintf(dest, "%s\n", ERROR);
         return 1;
       }
@@ -346,13 +346,13 @@ int handleGetQuestion(char *info, char *dest) {
       // Print uid to dest
       err = sprintf(dest + strlen(dest), "%d ", aUID);
       if (err < 0) {
-        memset(dest, 0, BUFFER_SIZE);
+        memset(dest, 0, destsize);
         sprintf(dest, "%s\n", ERROR);
         return 1;
       }
     } else {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -360,7 +360,7 @@ int handleGetQuestion(char *info, char *dest) {
     memset(answer, 0, BUFFER_SIZE);
     err = sprintf(answer, "%s/%s", filename, ANS_DATA);
     if (err < 0) {
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -372,7 +372,7 @@ int handleGetQuestion(char *info, char *dest) {
     data = (char *)malloc(sizeof(char) * (size + 1));
     if (data == NULL) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -382,7 +382,7 @@ int handleGetQuestion(char *info, char *dest) {
       f = fopen(answer, "r");
       if (f == NULL) {
 
-        memset(dest, 0, BUFFER_SIZE);
+        memset(dest, 0, destsize);
         sprintf(dest, "%s\n", ERROR);
         return 1;
       }
@@ -398,7 +398,7 @@ int handleGetQuestion(char *info, char *dest) {
       err = sprintf(dest + strlen(dest), "%d %s ", (int)size, data);
       if (err < 0) {
 
-        memset(dest, 0, BUFFER_SIZE);
+        memset(dest, 0, destsize);
         sprintf(dest, "%s\n", ERROR);
         return 1;
       }
@@ -406,7 +406,7 @@ int handleGetQuestion(char *info, char *dest) {
       free(data);
     } else {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -415,7 +415,7 @@ int handleGetQuestion(char *info, char *dest) {
     memset(answer, 0, BUFFER_SIZE);
     err = sprintf(answer, "%s/%s", filename, IMG_DATA);
     if (err < 0) {
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -423,7 +423,7 @@ int handleGetQuestion(char *info, char *dest) {
       f = fopen(answer, "r");
       if (f == NULL) {
 
-        memset(dest, 0, BUFFER_SIZE);
+        memset(dest, 0, destsize);
         sprintf(dest, "%s\n", ERROR);
         return 1;
       }
@@ -433,14 +433,14 @@ int handleGetQuestion(char *info, char *dest) {
       fclose(f);
     } else {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
 
     err = sprintf(dest + strlen(dest), "%d", qIMG);
     if (err < 0) {
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -450,7 +450,7 @@ int handleGetQuestion(char *info, char *dest) {
       memset(answer, 0, BUFFER_SIZE);
       err = sprintf(answer, "%s/%s.%s", filename, IMG, ext);
       if (err < 0) {
-        memset(dest, 0, BUFFER_SIZE);
+        memset(dest, 0, destsize);
         sprintf(dest, "%s\n", ERROR);
         return 1;
       }
@@ -462,7 +462,7 @@ int handleGetQuestion(char *info, char *dest) {
         data = (char *)malloc(sizeof(char) * (size + 1));
         if (data == NULL) {
 
-          memset(dest, 0, BUFFER_SIZE);
+          memset(dest, 0, destsize);
           sprintf(dest, "%s\n", ERROR);
           return 1;
         }
@@ -470,7 +470,7 @@ int handleGetQuestion(char *info, char *dest) {
         f = fopen(answer, "r");
         if (f == NULL) {
 
-          memset(dest, 0, BUFFER_SIZE);
+          memset(dest, 0, destsize);
           sprintf(dest, "%s\n", ERROR);
           return 1;
         }
@@ -488,7 +488,7 @@ int handleGetQuestion(char *info, char *dest) {
         err = sprintf(dest + strlen(dest), " %s %d %s", ext, (int)size, data);
         if (err < 0) {
 
-          memset(dest, 0, BUFFER_SIZE);
+          memset(dest, 0, destsize);
           memset(filename, 0, 128);
           sprintf(dest, "%s\n", ERROR);
           return 1;
@@ -497,7 +497,7 @@ int handleGetQuestion(char *info, char *dest) {
         free(data);
       } else {
 
-        memset(dest, 0, BUFFER_SIZE);
+        memset(dest, 0, destsize);
         sprintf(dest, "%s\n", ERROR);
         return 1;
       }
@@ -595,7 +595,7 @@ int parseSubmitQuestion(char *info, int *id, char *topic, char *question,
   return 0;
 }
 
-int handleSubmitQuestion(char *info, char *dest) {
+int handleSubmitQuestion(char *info, char *dest, long destsize) {
 
   char topic[16], question[16], *data, ext[4], *idata;
   char path[BUFFER_SIZE], filename[2 * BUFFER_SIZE];
@@ -604,7 +604,7 @@ int handleSubmitQuestion(char *info, char *dest) {
   DIR *d;
   struct dirent *ent;
 
-  memset(dest, 0, BUFFER_SIZE);
+  memset(dest, 0, destsize);
   err = sprintf(dest, "%s ", SUBMIT_QUESTION_RESPONSE);
   if (err < 0) {
     return 1;
@@ -622,14 +622,14 @@ int handleSubmitQuestion(char *info, char *dest) {
   err = sprintf(path, "%s/%s", TOPICS, topic); // Topics/topic_name
   if (err < 0) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
 
   if ((d = opendir(path)) == NULL) { // Check if topic dir exists
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   } else {
@@ -647,13 +647,13 @@ int handleSubmitQuestion(char *info, char *dest) {
                 question); // Build path for question dir
   if (err < 0) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
 
   if (opendir(path)) { // Check if question already exists
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     strcpy(dest, SUBMIT_QUESTION_RESPONSE);
     strcat(dest, DUP);
     return 0;
@@ -661,7 +661,7 @@ int handleSubmitQuestion(char *info, char *dest) {
     err = mkdir(path, 0700);
     if (err < 0) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -671,7 +671,7 @@ int handleSubmitQuestion(char *info, char *dest) {
                 DATA); // Build path for QUESTION_DATA dir
   if (err < 0) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -679,7 +679,7 @@ int handleSubmitQuestion(char *info, char *dest) {
   err = mkdir(path, 0700); // Make data dir
   if (err < 0) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -687,7 +687,7 @@ int handleSubmitQuestion(char *info, char *dest) {
   err = sprintf(filename, "%s/%s", path, USER); // Make user id file and fill it
   if (err < 0) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -695,7 +695,7 @@ int handleSubmitQuestion(char *info, char *dest) {
   f = fopen(filename, "w");
   if (f == NULL) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -703,7 +703,7 @@ int handleSubmitQuestion(char *info, char *dest) {
   err = fprintf(f, "%d", id);
   if (err < 0) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -714,7 +714,7 @@ int handleSubmitQuestion(char *info, char *dest) {
   err = sprintf(filename, "%s/%s", path, Q_INFO);
   if (err < 0) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -722,7 +722,7 @@ int handleSubmitQuestion(char *info, char *dest) {
   f = fopen(filename, "w");
   if (f == NULL) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -730,7 +730,7 @@ int handleSubmitQuestion(char *info, char *dest) {
   err = fprintf(f, "%s", data);
   if (err < 0) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -741,7 +741,7 @@ int handleSubmitQuestion(char *info, char *dest) {
   err = sprintf(filename, "%s/%s", path, IMG_DATA);
   if (err < 0) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -749,7 +749,7 @@ int handleSubmitQuestion(char *info, char *dest) {
   f = fopen(filename, "w");
   if (f == NULL) {
 
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -757,7 +757,7 @@ int handleSubmitQuestion(char *info, char *dest) {
     err = fprintf(f, "%d %s", qIMG, "nil");
     if (err < 0) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -765,7 +765,7 @@ int handleSubmitQuestion(char *info, char *dest) {
     err = fprintf(f, "%d %s", qIMG, ext);
     if (err < 0) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -778,7 +778,7 @@ int handleSubmitQuestion(char *info, char *dest) {
     err = sprintf(filename, "%s/%s.%s", path, IMG, ext);
     if (err < 0) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -786,7 +786,7 @@ int handleSubmitQuestion(char *info, char *dest) {
     f = fopen(filename, "w");
     if (f == NULL) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -794,7 +794,7 @@ int handleSubmitQuestion(char *info, char *dest) {
     err = fprintf(f, "%s", idata);
     if (err < 0) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -894,7 +894,7 @@ int parseSubmitAnswer(char *info, int *id, char *topic, char *question,
   return 0;
 }
 
-int handleSubmitAnswer(char *info, char *dest) {
+int handleSubmitAnswer(char *info, char *dest, long destsize) {
 
   char topic[16], question[16], *data, ext[4], *idata;
   char path[BUFFER_SIZE], filename[2 * BUFFER_SIZE];
@@ -903,7 +903,7 @@ int handleSubmitAnswer(char *info, char *dest) {
   DIR *d;
   struct dirent *ent;
 
-  memset(dest, 0, BUFFER_SIZE);
+  memset(dest, 0, destsize);
   err = sprintf(dest, "%s ", SUBMIT_ANSWER_RESPONSE);
   if (err < 0) {
     return 1;
@@ -921,13 +921,13 @@ int handleSubmitAnswer(char *info, char *dest) {
   err = sprintf(path, "%s/%s/%s", TOPICS, topic,
                 question); // Topics/topic_name/question
   if (err < 0) {
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
 
   if ((d = opendir(path)) == NULL) { // Check if topic/question dir exists
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   } else {
@@ -946,46 +946,46 @@ int handleSubmitAnswer(char *info, char *dest) {
                        : sprintf(path + strlen(path), "/ANSWER_%d",
                                  fileN - 2); // Build path for answer dir
   if (err < 0) {
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
 
   if (opendir(path)) { // Check if answer already exists
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     strcpy(dest, SUBMIT_QUESTION_RESPONSE);
     strcat(dest, DUP);
     return 0;
   } else if (errno == ENOENT) {
     err = mkdir(path, 0700);
     if (err < 0) {
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
   } else {
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
 
   err = sprintf(filename, "%s/%s", path, USER); // Make user id file and fill it
   if (err < 0) {
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
 
   f = fopen(filename, "w");
   if (f == NULL) {
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
 
   err = fprintf(f, "%d", id);
   if (err < 0) {
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -995,21 +995,21 @@ int handleSubmitAnswer(char *info, char *dest) {
   memset(filename, 0, BUFFER_SIZE); // Make answer data file and fill it
   err = sprintf(filename, "%s/%s", path, ANS_DATA);
   if (err < 0) {
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
 
   f = fopen(filename, "w");
   if (f == NULL) {
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
 
   err = fprintf(f, "%s", data);
   if (err < 0) {
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
@@ -1018,28 +1018,28 @@ int handleSubmitAnswer(char *info, char *dest) {
   memset(filename, 0, BUFFER_SIZE); // Make image info file and fill it
   err = sprintf(filename, "%s/%s", path, IMG_DATA);
   if (err < 0) {
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
 
   f = fopen(filename, "w");
   if (f == NULL) {
-    memset(dest, 0, BUFFER_SIZE);
+    memset(dest, 0, destsize);
     sprintf(dest, "%s\n", ERROR);
     return 1;
   }
   if (qIMG == 0) {
     err = fprintf(f, "%d %s", qIMG, "nil");
     if (err < 0) {
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
   } else {
     err = fprintf(f, "%d %s", qIMG, ext);
     if (err < 0) {
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -1052,7 +1052,7 @@ int handleSubmitAnswer(char *info, char *dest) {
     err = sprintf(filename, "%s/%s.%s", path, IMG, ext);
     if (err < 0) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -1060,7 +1060,7 @@ int handleSubmitAnswer(char *info, char *dest) {
     f = fopen(filename, "w");
     if (f == NULL) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
@@ -1068,7 +1068,7 @@ int handleSubmitAnswer(char *info, char *dest) {
     err = fprintf(f, "%s", idata);
     if (err < 0) {
 
-      memset(dest, 0, BUFFER_SIZE);
+      memset(dest, 0, destsize);
       sprintf(dest, "%s\n", ERROR);
       return 1;
     }
