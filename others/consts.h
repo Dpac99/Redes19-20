@@ -87,4 +87,9 @@ struct User{
 	int num_questions;
 };
 
+struct Submission {
+	char *filename;
+	char *content;
+};
+
 #endif

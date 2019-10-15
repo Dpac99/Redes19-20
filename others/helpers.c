@@ -86,3 +86,54 @@ bool fileExists(char *filename) {
   struct stat buff;
   return (stat(filename, &buff) == 0);
 }
+
+char *copyFile(char *filename) {
+  char *aux = 0;
+  char *content;
+  FILE *fp;
+  int size, status;
+
+  fp = fopen(filename, "r");
+  if (fp == NULL) {
+    printf("Error opening file %s.\n", filename);
+    return NULL;
+  }
+  status = fseek(fp, 0L, SEEK_END);
+  size = ftell(fp);
+  if (status == -1 || size == -1) {
+    printf("Error finding %s size.\n", filename);
+    return NULL;
+  }
+
+  aux = (char *)malloc(size * sizeof(char));
+  if (aux == NULL) {
+    printf("Error allocating memory.\n");
+    return NULL;
+  }
+  content = (char *)malloc(size * sizeof(char));
+  if (content == NULL) {
+    printf("Error allocating memory.\n");
+    return NULL;
+  }
+
+  rewind(fp);
+
+  if (aux) {
+    fread(aux, 1, size, fp);
+    if (ferror(fp) != 0) {
+      printf("Error reading file %s.\n", filename);
+      return NULL;
+    }
+  }
+
+  strcpy(content, aux);
+  printf("%s", content);
+  free(aux);
+
+  status = fclose(fp);
+  if (status == -1 || size == -1) {
+    printf("Error closing file %s.\n", filename);
+    return NULL;
+  }
+  return content;
+}
