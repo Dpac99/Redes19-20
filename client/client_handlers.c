@@ -1,88 +1,80 @@
 #include "client_handlers.h"
 #include "../others/helpers.h"
 
-//PROTOCOL RESPONSE HANDLERS
+// PROTOCOL RESPONSE HANDLERS
 
-void handleRGR(char *buffer, struct User *user){
-	char *token;
-	token = strtok(buffer, " ");
+void handleRGR(char *buffer, struct User *user) {
+  char *token;
+  token = strtok(buffer, " ");
 
-	if (strcmp(token, REGISTER_RESPONSE) == 0){
-		token = strtok(NULL, " ");
-		if(strcmp(token, OK) == 0){
-			printf("User '%d' registered successfully.\n", user->userId);
-		}
-		else if(strcmp(token, NOK) == 0){
-			printf("Failed to register user '%d'.\n", user->userId);
-			user->userId = -1;
-		}
-	}
-	else{
-		printf("Error receiving answer from server.\n");
-	}
-	return;
+  if (strcmp(token, REGISTER_RESPONSE) == 0) {
+    token = strtok(NULL, " ");
+    if (strcmp(token, OK) == 0) {
+      printf("User '%d' registered successfully.\n", user->userId);
+    } else if (strcmp(token, NOK) == 0) {
+      printf("Failed to register user '%d'.\n", user->userId);
+      user->userId = -1;
+    }
+  } else {
+    printf("Error receiving answer from server.\n");
+  }
+  return;
 }
 
-int handleLTR(char *commandArgs[], struct User *user){
-	char *token;
-	char *UserIds[MAX_TOPICS][USER_ID_SIZE];
-	int n_topics, i, err = 0;
+int handleLTR(char *commandArgs[], struct User *user) {
+  char *token;
+  char UserIds[MAX_TOPICS][USER_ID_SIZE + 1];
+  int n_topics, i, err = 0;
 
-	if((strcmp(commandArgs[0], TOPIC_LIST_RESPONSE) == 0) && isnumber(commandArgs[1])){
-		n_topics = atoi(commandArgs[1]);
+  if ((strcmp(commandArgs[0], TOPIC_LIST_RESPONSE) == 0) &&
+      isnumber(commandArgs[1])) {
+    n_topics = atoi(commandArgs[1]);
+    if ((0 < n_topics) && (n_topics <= MAX_TOPICS)) {
+      for (i = 0; i < n_topics; i++) {
+        token = strtok(commandArgs[i + 2], ":");
+        if (isValidTopic(token)) {
+          token = strtok(NULL, ":");
+          if (isnumber(token) && isValidId(token)) {
+            strcpy(user->topics[i], commandArgs[i + 2]);
+            strcpy(UserIds[i], token);
+          } else
+            err = 1;
+        } else
+          err = 1;
+        if (err == 1) {
+          break;
+        }
+      }
+    } else if (n_topics == 0) {
+      if (strlen(commandArgs[2]) != 0) {
+        err = 1;
+      } else
+        printf("No topics available yet.\n");
+    } else
+      err = 1;
+  } else {
+    err = 1;
+  }
 
-		if( (0 < n_topics ) && (n_topics <= MAX_TOPICS)){
-			for(i = 0; i < n_topics; i++){
-				token = strtok(commandArgs[i + 2], ":");
-				if(isValidTopic(token)){
-					token = strtok(NULL, ":");
-					if(isnumber(token) && isValidId(token)){
-						strcpy(user->topics[i], commandArgs[i+2]); 
-						strcpy(UserIds[i], token);		
-					}
-					else
-						err = 1;
-				}
-				else
-					err = 1;
-				if( err == 1){
-					break;
-				}	
-			}
-		}
-		else if(n_topics == 0){
-			if (strlen(commandArgs[2]) != 0){
-				err = 1;
-			}
-			else
-				printf("No topics available yet.\n");
-		}
-		else
-			err = 1;
-	}
-	else{
-		err = 1;
-	}
+  if (err == 1) {
+    printf("Error receiving message from server.\n");
+    for (i = 0; i < n_topics + 2; i++) {
+      memset(user->topics[i], 0, TOPIC_SIZE);
+    }
+    return INVALID;
+  }
 
-	if(err == 1){
-		printf("Error receiving message from server.\n");
-		for(i = 0; i < n_topics + 2; i++){
-			memset(user->topics[i], 0, TOPIC_SIZE);
-		}
-		return INVALID;
-	}
-
-	
-	for(i = 0; i < n_topics; i++){
-		printf("Topic %d: %s.	Proposed by user %s.\n", i+1, user->topics[i], UserIds[i]);
-	}
-
-	for(i = 0; i < COMMANDS; i++){
-		memset(commandArgs[i], 0, ARG_SIZE);
-	}
-
-	user->num_topics = n_topics;
-	return VALID;
+  for (i = 0; i < n_topics; i++) {
+    i < 9 ? printf("Topic 0%d: %10s\tProposed by user: %s.\n", i + 1,
+                   user->topics[i], UserIds[i])
+          : printf("Topic %d: %10s\tProposed by user: %s.\n", i + 1,
+                   user->topics[i], UserIds[i]);
+  }
+  for (i = 0; i < COMMANDS; i++) {
+    memset(commandArgs[i], 0, ARG_SIZE);
+  }
+  user->num_topics = n_topics;
+  return VALID;
 }
 
 int handlePTR(char *buffer, struct User *user, char aux_topic[]){

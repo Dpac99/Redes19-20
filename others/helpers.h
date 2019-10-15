@@ -11,5 +11,7 @@ int isValidId(char *userId);
 int isValidTopic(char *topic);
 int parseCommand(char *buffer, char *commandArgs[]);
 bool fileExists(char *filename);
+char* copyFile(char* filename);
+void checkFileContent(struct Submission* submission);
 
 #endif

@@ -15,7 +15,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <sys/stat.h>
 #include <stdbool.h> 
 #include <ctype.h>
 
@@ -88,6 +87,13 @@ struct User{
 	char **questions;
 	int num_topics;
 	int num_questions;
+};
+
+struct Submission {
+	char* text_name;
+	char* text_content;
+	char* image_name;
+	char *image_content;
 };
 
 #endif
