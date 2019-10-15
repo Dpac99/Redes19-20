@@ -6,6 +6,7 @@
 void parseArgs(int argc, char *argv[], char *port, char *server_IP);
 int readCommand(char *buffer);
 struct User *initUser();
+struct Submission *initSubmission();
 void endClient(char **commandArgs, struct User *user, int udp_fd /*, int tcp_fd*/);
 int communicateUDP(char *buffer, int fd, struct addrinfo *res,
                    struct sockaddr_in addr);
@@ -18,6 +19,7 @@ int main(int argc, char *argv[]) {
   struct addrinfo hints, *res;
   struct sockaddr_in addr;
   struct User *user;
+  struct Submission *submission;
   char buffer[BUFFER_SIZE], **commandArgs, *port, *server_IP, command[COMMAND_SIZE];
   char topic[TOPIC_SIZE], question[QUESTION_SIZE];
 

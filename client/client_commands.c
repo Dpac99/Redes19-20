@@ -106,7 +106,7 @@ void topicSelect(char *buffer, int flag, struct User *user) {
     if (status == VALID) {
       printf("Topic '%s' is now selected.\n", user->selected_topic);
     }
-
+  }
   memset(buffer, 0, BUFFER_SIZE);
   return;
 }
@@ -365,7 +365,8 @@ int answerSubmit(struct User *user, char *commandArgs[]) {
     strcpy(imagename, commandArgs[1]);
     image_file = strtok(aux, ".");
     ext = strtok(NULL, " ");
-    if (image_file == NULL || ext == NULL) {
+
+    if ((image_file == NULL) || (ext == NULL)) {
       printf("Invalid command format.\n");
       return INVALID;
     }
