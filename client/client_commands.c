@@ -155,7 +155,7 @@ int questionList(char *buffer, struct User *user){
 		return INVALID;
 	}	
 
-	if(user->selected_topic == NULL){
+	if(strlen(user->selected_topic) == 0){
 		printf("Please select a topic first.\n");
 		return INVALID;
 	}

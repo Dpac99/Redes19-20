@@ -50,6 +50,13 @@ int handleLTR(char *commandArgs[], struct User *user){
 				}	
 			}
 		}
+		else if(n_topics == 0){
+			if (strlen(commandArgs[2]) != 0){
+				err = 1;
+			}
+			else
+				printf("No topics available yet.\n");
+		}
 		else
 			err = 1;
 	}
@@ -70,9 +77,10 @@ int handleLTR(char *commandArgs[], struct User *user){
 		printf("Topic %d: %s.	Proposed by user %s.\n", i+1, user->topics[i], UserIds[i]);
 	}
 
-	for (i = 0; i < COMMANDS; i++) {
+	for(i = 0; i < COMMANDS; i++){
 		memset(commandArgs[i], 0, ARG_SIZE);
 	}
+
 	user->num_topics = n_topics;
 	return VALID;
 }
@@ -117,5 +125,81 @@ int handlePTR(char *buffer, struct User *user, char aux_topic[]){
 }
 
 int handleLQR(char *commandArgs[], struct User *user){
+	char *token;
+	char *UserIds[MAX_QUESTIONS][USER_ID_SIZE];
+	char *NumAnswers[MAX_QUESTIONS][USER_ID_SIZE];
+	int n_questions, i, num, err = 0;
+
+	if((strcmp(commandArgs[0], QUESTION_LIST_RESPONSE) == 0) && isnumber(commandArgs[1])){
+		n_questions = atoi(commandArgs[1]);
+
+		if( (0 < n_questions ) && (n_questions <= MAX_QUESTIONS)){
+			for(i = 0; i < n_questions; i++){
+				token = strtok(commandArgs[i + 2], ":");
+				if(isValidTopic(token)){
+					token = strtok(NULL, ":");
+
+					if(isnumber(token) && isValidId(token)){
+						strcpy(user->questions[i], commandArgs[i+2]); 
+						strcpy(UserIds[i], token);	
+						token = strtok(NULL, ":");
+
+						if(isnumber(token)){
+							num = atoi(token);
+							if((num >= 0) && (num <= MAX_ANSWERS))
+								strcpy(NumAnswers[i], token);
+							else
+								err = 1;
+						}
+						else
+							err = 1;
+					}
+					else{
+						err = 1;
+					}
+				}
+				else{
+					err = 1;
+				}
+
+				if( err == 1){
+					break;
+				}	
+			}
+		}
+		else if( n_questions == 0){
+			if( strlen(commandArgs[2]) == 0){
+				printf("No questions yet for topic '%s'.\n", user->selected_topic);
+			}
+			else{
+				err = 1;
+			}
+		}
+		else{
+			err = 1;
+		}
+	}
+	else{
+		err = 1;
+	}
+
+	if(err == 1){
+		printf("Error receiving message from server.\n");
+		for(i = 0; i < n_questions + 2; i++){
+			memset(user->questions[i], 0, TOPIC_SIZE);
+		}
+		return INVALID;
+	}
+
+	
+	for(i = 0; i < n_questions; i++){
+		printf("Question %d: %s.	Proposed by user %s with %s answers.\n", i+1, user->questions[i], UserIds[i], NumAnswers[i]);
+	}
+
+	for(i = 0; i < COMMANDS; i++){
+		memset(commandArgs[i], 0, ARG_SIZE);
+	}
+
+	user->num_questions = n_questions;
 	return VALID;
 }

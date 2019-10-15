@@ -28,22 +28,30 @@ int sizeOfNumber(int n) {
 
 int parseCommand(char *buffer, char *commandArgs[]) {
   char *token;
-  int i = 0;
+  int i = 0, count = 0, size = strlen(buffer);
   token = strtok(buffer, " ");
 
   i=0;
   while ((token != NULL) && (i < COMMANDS)) {
     if (strlen(token) <= ARG_SIZE) {
+      count += strlen(token);
       strcpy(commandArgs[i], token);
       i++;
       token = strtok(NULL, " ");
-    } else {
+    } 
+    else {
       return INVALID;
     }
   }
   if ((i >= COMMANDS) && (token != NULL)) {
     return INVALID;
-  } else {
+  } 
+  
+  if( (count + i) != size){            //Checks if each token is separated by 1 single space.
+    printf("More spaces than expected\n");
+    return INVALID;
+  }
+  else {
     return VALID;
   }
 }
@@ -72,7 +80,7 @@ int isnumber(char *number) {
       return INVALID;
     }
   }
-  return atoi(number);
+  return VALID;
 }
 
 bool fileExists(char *filename) {
