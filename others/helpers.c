@@ -85,6 +85,24 @@ bool fileExists(char *filename) {
   return (stat(filename, &buff) == 0);
 }
 
+int fileSize(char *filename) {
+  FILE *fp;
+  int size, status;
+
+  fp = fopen(filename, "r");
+  if (fp == NULL) {
+    printf("Error opening file %s.\n", filename);
+    return -1;
+  }
+  status = fseek(fp, 0L, SEEK_END);
+  size = ftell(fp);
+  if (status == -1 || size == -1) {
+    printf("Error finding %s size.\n", filename);
+    return -1;
+  }
+  return size;
+}
+
 char *copyFile(char *filename) {
   char *aux = 0;
   char *content;

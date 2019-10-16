@@ -12,6 +12,7 @@ int isValidTopic(char *topic);
 int parseCommand(char *buffer, char *commandArgs[]);
 bool fileExists(char *filename);
 char* copyFile(char* filename);
+long fileSize(char *filename);
 void checkFileContent(struct Submission* submission);
 
 #endif

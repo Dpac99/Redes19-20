@@ -92,8 +92,11 @@ struct User{
 struct Submission {
 	char* text_name;
 	char* text_content;
+	long text_size;
 	char* image_name;
 	char *image_content;
+	char* image_ext;
+	long image_size;
 };
 
 #endif
