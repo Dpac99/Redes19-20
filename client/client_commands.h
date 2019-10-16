@@ -13,6 +13,6 @@ int questionList(char *buffer, struct User *user);
 int questionGet(char *buffer, int flag, struct User *user, char question[]);
 int questionSubmit(struct User *user, char *commandArgs[], struct Submission* submission);
 int answerSubmit(struct User *user, char *commandArgs[], struct Submission* submission);
-int sendSubmission(struct Submission *Submission, int tcp_fd);
+int sendSubmission(struct User *user, struct Submission *submission, char *buffer, int tcp_fd);
 
 #endif

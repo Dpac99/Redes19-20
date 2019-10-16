@@ -210,12 +210,35 @@ int main(int argc, char *argv[]) {
 
     else if ((strcmp(command, "question_submit") == 0) ||
              (strcmp(command, "qs") == 0)) {
+      // Clean commandArgs
+      for (i = 0; i < COMMANDS; i++) {
+        memset(commandArgs[i], 0, ARG_SIZE);
+      }
       parseCommand(buffer, commandArgs);
       status = questionSubmit(user, commandArgs, submission);
+      if(status == VALID){
+        if(connectTCP(res,aux, &tcp_fd)){
+          if(sendSubmission(user, submission, buffer, tcp_fd) == VALID){
+            
+            memset(buffer, 0, BUFFER_SIZE);
+  
+          }
+          else{
+            printf("Error sending msg to server.\n");
+          }
+          if(tcp_fd > 0){
+            close(tcp_fd);
+          }
+        }
+      }
     }
 
     else if ((strcmp(command, "answer_submit") == 0) ||
              (strcmp(command, "as") == 0)) {
+      // Clean commandArgs
+      for (i = 0; i < COMMANDS; i++) {
+        memset(commandArgs[i], 0, ARG_SIZE);
+      }
       parseCommand(buffer, commandArgs);
       status = answerSubmit(user, commandArgs, submission);
     }
