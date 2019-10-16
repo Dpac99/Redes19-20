@@ -234,6 +234,7 @@ int questionSubmit(struct User *user, char *commandArgs[], struct Submission* su
 	char *image_file;
 	char *ext;
   long file_size, image_size;
+  
   // Allocate memory for filename and imagename
 	char *filename = (char*)malloc(BUFFER_SIZE * sizeof(char));
 	char *imagename = (char*)malloc(BUFFER_SIZE * sizeof(char));
@@ -247,8 +248,11 @@ int questionSubmit(struct User *user, char *commandArgs[], struct Submission* su
     	return INVALID;
 	}
 
-  // Check if there is a selected topic
-	if(strcmp(user->selected_topic, "") == 0) {
+  // Check if the user is registered  and if there is a selected topic
+  if (user->userId == -1) {
+    printf("Unregistered user.\n");
+    return INVALID;
+  } else if(strcmp(user->selected_topic, "") == 0) {
 		printf("No selected topic.\n");
 		return INVALID;
 	}
@@ -275,7 +279,7 @@ int questionSubmit(struct User *user, char *commandArgs[], struct Submission* su
 		return INVALID;
 	}
 
-  // Check if there is a message in input, if the format is image_file.ext and if the file exists
+  // Check if there is an image in the input, if the format is image_file.ext and if the file exists
 	aux = commandArgs[2];
 	if (strcmp(aux, "") != 0) {
 		imageExists = TRUE;
@@ -295,11 +299,6 @@ int questionSubmit(struct User *user, char *commandArgs[], struct Submission* su
   // Save selected question
 	strcpy(user->selected_question, question);
 
-  // Clean commandArgs
-	for (i = 0; i < COMMANDS; i++) {
-		memset(commandArgs[i], 0, ARG_SIZE);
-	}
-
 	// Save text file name
 	submission->text_name = (char*)malloc(strlen(filename) * sizeof(char));
 	if (submission->text_name == NULL) {
@@ -312,17 +311,6 @@ int questionSubmit(struct User *user, char *commandArgs[], struct Submission* su
   }
 	strcpy(submission->text_name, filename);
   submission->text_size = file_size;
-  
-	// aux = copyFile(filename);
-	// if (aux == NULL) {
-	// 	return INVALID;
-	// }
-	// submission->text_content = (char*)malloc(strlen(aux) * sizeof(char));
-	// if (submission->text_content == NULL) {
-	// 	printf("Error allocating memory.\n");
-  //   return INVALID;
-	// }
-	// strcpy(submission->text_content, aux);
 
 	// Save image file name and extension
   if (imageExists) {
@@ -341,19 +329,14 @@ int questionSubmit(struct User *user, char *commandArgs[], struct Submission* su
     return INVALID;
   }
 	  strcpy(submission->image_name, imagename);
+    strcpy(submission->image_ext, ext);
     submission->image_size = image_size;
   }
-	// if (imageExists)
-	// 	aux = copyFile(imagename);
-	// if (aux == NULL) {
-	// 	return INVALID;
-	// }
-	// submission->image_content = (char*)malloc(strlen(aux) * sizeof(char));
-	// if (submission->image_content == NULL) {
-	// 	printf("Error allocating memory.\n");
-  //   	return INVALID;
-	// }
-	// strcpy(submission->image_content, aux);
+
+  // Clean commandArgs
+	for (i = 0; i < COMMANDS; i++) {
+		memset(commandArgs[i], 0, ARG_SIZE);
+	}
 
   free(text_file);
 	free(imagename);
@@ -363,15 +346,32 @@ int questionSubmit(struct User *user, char *commandArgs[], struct Submission* su
 	return VALID;
 }
 
-int answerSubmit(struct User *user, char *commandArgs[]) {
+int answerSubmit(struct User *user, char *commandArgs[], struct Submission* submission) {
+  int i, imageExists = FALSE;
   char *aux;
   char *text_file;
   char *image_file;
   char *ext;
-  char *filename = (char *)malloc(BUFFER_SIZE * sizeof(char));
-  char *imagename = (char *)malloc(BUFFER_SIZE * sizeof(char));
+  long file_size, image_size;
 
-  if (strcmp(user->selected_topic, "") == 0) {
+  // Allocate memory for filename and imagename
+	char *filename = (char*)malloc(BUFFER_SIZE * sizeof(char));
+	char *imagename = (char*)malloc(BUFFER_SIZE * sizeof(char));
+
+	if (filename == NULL) {
+		printf("Error allocating memory.\n");
+    	return INVALID;
+	}
+	if (imagename == NULL) {
+		printf("Error allocating memory.\n");
+    	return INVALID;
+	}
+
+  // Check if the user is registered  and if there is a selected topic and a selected question
+  if (user->userId == -1) {
+    printf("Unregistered user.\n");
+    return INVALID;
+  } else if (strcmp(user->selected_topic, "") == 0) {
     printf("No selected topic.\n");
     return INVALID;
   } else if (strcmp(user->selected_question, "") == 0) {
@@ -379,12 +379,14 @@ int answerSubmit(struct User *user, char *commandArgs[]) {
     return INVALID;
   }
 
+  // Check if there is a text file in the input
   text_file = commandArgs[0];
   if (strlen(text_file) == 0) {
     printf("Invalid command format.\n");
     return INVALID;
   }
 
+  // Check if the file exists
   strcpy(filename, text_file);
   strcat(filename, ".txt");
   if (!fileExists(filename)) {
@@ -392,12 +394,13 @@ int answerSubmit(struct User *user, char *commandArgs[]) {
     return INVALID;
   }
 
+  // Check if there is an image in the input, if the format is image_file.ext and if the file exists
   aux = commandArgs[1];
   if (strcmp(aux, "") != 0) {
+    imageExists = TRUE;
     strcpy(imagename, commandArgs[1]);
     image_file = strtok(aux, ".");
     ext = strtok(NULL, " ");
-
     if ((image_file == NULL) || (ext == NULL)) {
       printf("Invalid command format.\n");
       return INVALID;
@@ -407,6 +410,50 @@ int answerSubmit(struct User *user, char *commandArgs[]) {
       return INVALID;
     }
   }
+
+  // Save text file name
+	submission->text_name = (char*)malloc(strlen(filename) * sizeof(char));
+	if (submission->text_name == NULL) {
+		printf("Error allocating memory.\n");
+    return INVALID;
+	}
+  file_size = fileSize(filename);
+  if (file_size == -1) {
+    return INVALID;
+  }
+	strcpy(submission->text_name, filename);
+  submission->text_size = file_size;
+
+  if (imageExists) {
+	  submission->image_name = (char*)malloc(strlen(imagename) * sizeof(char));
+	  if (submission->image_name == NULL) {
+		  printf("Error allocating memory.\n");
+      return INVALID;
+	  }
+    submission->image_ext = (char*)malloc(strlen(ext) * sizeof(char));
+    if (submission->image_ext == NULL) {
+		  printf("Error allocating memory.\n");
+      return INVALID;
+    }
+    image_size = fileSize(imagename);
+    if (image_size == -1) {
+    return INVALID;
+  }
+	  strcpy(submission->image_name, imagename);
+    strcpy(submission->image_ext, ext);
+    submission->image_size = image_size;
+  }
+
+  
+  // Clean commandArgs
+	for (i = 0; i < COMMANDS; i++) {
+		memset(commandArgs[i], 0, ARG_SIZE);
+	}
+
+  free(text_file);
+	free(imagename);
+	free(filename);
+	free(aux);
 
   return VALID;
 }

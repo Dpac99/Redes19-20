@@ -219,7 +219,7 @@ int main(int argc, char *argv[]) {
     else if ((strcmp(command, "answer_submit") == 0) ||
              (strcmp(command, "as") == 0)) {
       parseCommand(buffer, commandArgs);
-      status = answerSubmit(user, commandArgs);
+      status = answerSubmit(user, commandArgs, submission);
     }
 
     else {

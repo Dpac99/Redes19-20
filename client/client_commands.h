@@ -11,6 +11,6 @@ int topicPropose(char *buffer, struct User *user, char *topic);
 int questionList(char *buffer, struct User *user);
 int questionGet(char *buffer, int flag, struct User *user, char question[]);
 int questionSubmit(struct User *user, char *commandArgs[], struct Submission* submission);
-int answerSubmit(struct User *user, char *commandArgs[]);
+int answerSubmit(struct User *user, char *commandArgs[], struct Submission* submission);
 
 #endif
