@@ -55,7 +55,7 @@
 #define FALSE 0
 #define USER "USER.txt"
 #define DATA "QUESTION_DATA"
-#define Q_INFO "QUESTION_INFO.txt"
+#define QDATA "QDATA.txt"
 #define IMG "IMG"
 #define IMG_DATA "IMG_DATA.txt"
 #define ANS_DATA "ANS_DATA.txt"
