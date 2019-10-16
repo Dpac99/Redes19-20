@@ -3,6 +3,7 @@
 
 #include "../others/consts.h"
 #include "../others/helpers.h"
+#include "client_communication.h"
 
 int registerUser(char *buffer, struct User *user);
 int topicList(char *buffer, struct User *user);
@@ -12,5 +13,6 @@ int questionList(char *buffer, struct User *user);
 int questionGet(char *buffer, int flag, struct User *user, char question[]);
 int questionSubmit(struct User *user, char *commandArgs[], struct Submission* submission);
 int answerSubmit(struct User *user, char *commandArgs[]);
+int sendSubmission(struct Submission *Submission, int tcp_fd);
 
 #endif

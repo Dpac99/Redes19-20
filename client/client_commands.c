@@ -1,6 +1,8 @@
 #include "client_commands.h"
 
-// COMMAND HANDLING
+/*************** COMMAND HANDLING**********************************/
+
+////////////////// UDP COMMANDS ///////////////////////////////////
 
 int registerUser(char *buffer, struct User *user) {
   char *token;
@@ -167,6 +169,7 @@ int questionList(char *buffer, struct User *user) {
   return VALID;
 }
 
+////////////////// TCP COMMANDS ///////////////////////////////////
 int questionGet(char *buffer, int flag, struct User *user, char aux_question[]){	//TODO: get question from the question list
 	char *token;
 	int i, status = INVALID, num, buffer_size, n_questions = user->num_questions;
@@ -408,5 +411,9 @@ int answerSubmit(struct User *user, char *commandArgs[]) {
     }
   }
 
+  return VALID;
+}
+
+int sendSubmission(struct Submission *Submission, int tcp_fd){
   return VALID;
 }
