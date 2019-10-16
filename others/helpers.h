@@ -14,5 +14,6 @@ bool fileExists(char *filename);
 char *copyFile(char *filename);
 void shiftLeft(char *string, int shiftLength);
 void deleteDir(const char path[]);
+void checkFileContent(struct Submission *submission);
 
 #endif
