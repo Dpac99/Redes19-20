@@ -5,23 +5,25 @@
 
 void parseArgs(int argc, char *argv[], char *port, char *server_IP);
 int readCommand(char *buffer);
-void endClient(char **commandArgs, struct User *user, int udp_fd);
+void endClient(char **commandArgs, struct User *user, int udp_fd, char *buffer);
 struct User *initUser();
 struct Submission *initSubmission();
 int communicateUDP(char *buffer, int fd, struct addrinfo *res, struct sockaddr_in addr);
-int communicate_TCP(char *buffer, struct addrinfo *res, struct addrinfo *aux);
+int connectTCP(struct addrinfo *res, struct addrinfo *aux, int *tcp_fd);
+int sendTCP(char *buffer, int *tcp_fd);
+int receiveTCP(char *buffer,  int msg_size, int *socket_fd);
 
 
 int main(int argc, char *argv[]) {
 
   // INITIALIZATION OF GLOBAL VARIABLES
   int udp_fd, n, status, i;
-
+  int tcp_fd = 0;
   struct addrinfo hints, *res, *aux;
   struct sockaddr_in addr;
   struct User *user;
   struct Submission *submission;
-  char buffer[BUFFER_SIZE], **commandArgs, *port, *server_IP, command[COMMAND_SIZE];
+  char *buffer, **commandArgs, *port, *server_IP, command[COMMAND_SIZE];
   char topic[TOPIC_SIZE], question[QUESTION_SIZE];
 
   user = initUser();
@@ -64,6 +66,12 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
+  if (buffer == NULL) {
+    printf("Error allocating memory.\n");
+    exit(1);
+  }
+
   n = getaddrinfo(server_IP, port, &hints, &res);
   if (n != 0) {
     printf("Error connecting to server. Server: %s . Port: %s\n", server_IP,
@@ -81,20 +89,10 @@ int main(int argc, char *argv[]) {
         printf("Error with UDP socket connection\n");
         freeaddrinfo(res);
         freeaddrinfo(res->ai_next);
-        endClient(commandArgs, user, udp_fd);
+        endClient(commandArgs, user, udp_fd, buffer);
         exit(1);
       }
     }
-  /* if (aux->ai_socktype == SOCK_STREAM){                                     //TCP Socket
-      tcp_fd = socket(aux->ai_family, aux->ai_socktype, aux->ai_protocol);
-      if (tcp_fd == -1) {
-        printf("Error establishing TCP socket connection\n");
-        freeaddrinfo(res);
-        freeaddrinfo(res->ai_next);
-        endClient(commandArgs, user, udp_fd, tcp_fd);
-        exit(1);
-      }
-    }*/
   }
 
   printf("Welcome!\n>> ");
@@ -112,7 +110,7 @@ int main(int argc, char *argv[]) {
           handleRGR(buffer, user);
         }
         else if(status == ERR){
-          endClient(commandArgs, user, udp_fd);
+          endClient(commandArgs, user, udp_fd, buffer);
           exit(1);
         }
       }
@@ -129,7 +127,7 @@ int main(int argc, char *argv[]) {
           handleLTR(commandArgs, user);
         }
         else if(status == ERR){
-          endClient(commandArgs, user, udp_fd);
+          endClient(commandArgs, user, udp_fd, buffer);
           exit(1);
         }
       }
@@ -154,7 +152,7 @@ int main(int argc, char *argv[]) {
           handlePTR(buffer, user, topic);
         }
         else if(status == ERR){
-          endClient(commandArgs, user, udp_fd);
+          endClient(commandArgs, user, udp_fd, buffer);
           exit(1);
         }
       }
@@ -171,7 +169,7 @@ int main(int argc, char *argv[]) {
            handleLQR(commandArgs, user);
         }
         else if(status == ERR){
-          endClient(commandArgs, user, udp_fd);
+          endClient(commandArgs, user, udp_fd, buffer);
           exit(1);
         }
       }
@@ -188,7 +186,27 @@ int main(int argc, char *argv[]) {
     else if (strcmp(command, "qg") == 0) {
       status = questionGet(buffer, 1, user, question);
       if(status == VALID){
-        printf("Question: '%s'.\n Sending: %s", question, buffer);
+        if(connectTCP(res,aux, &tcp_fd)){
+          if(sendTCP(buffer, &tcp_fd)){
+            
+            memset(buffer, 0, BUFFER_SIZE);
+  
+            if(receiveTCP(buffer, 10, &tcp_fd )){
+              printf("Received: '%s'\n", buffer);
+              receiveTCP(buffer, 10, &tcp_fd);
+              printf("Received: '%s'\n", buffer);
+            }
+            else{
+              printf("Error receiving msg from server.\n");
+            }
+          }
+          else{
+            printf("Error sending msg to server.\n");
+          }
+          if(tcp_fd > 0){
+            close(tcp_fd);
+          }
+        }
       }
     }
 
@@ -214,7 +232,7 @@ int main(int argc, char *argv[]) {
     scanf("%s", command);
     readCommand(buffer);
   }
-  endClient(commandArgs, user, udp_fd);
+  endClient(commandArgs, user, udp_fd, buffer);
   return 0;
 }
 
@@ -282,63 +300,6 @@ int communicateUDP(char *buffer, int fd, struct addrinfo *res, struct sockaddr_i
 
   buffer[size] = '\0';
 
-  return VALID;
-}
-
-int communicateTCP(char *buffer, struct addrinfo *res, struct addrinfo *aux){
-  int n, fd;
-  int nbytes, nleft, nwritten, nread;
-  char *ptr;
-
-  for (aux = res; aux != NULL; aux = aux->ai_next){
-    if (aux->ai_socktype == SOCK_STREAM){                                     //TCP Socket
-      fd = socket(aux->ai_family, aux->ai_socktype, aux->ai_protocol);
-      if (fd == -1) {
-        printf("Error establishing TCP socket connection\n");
-        freeaddrinfo(res);
-        freeaddrinfo(res->ai_next);
-        return ERR;
-      }
-    }
-  }
-
-  n = connect(fd, res->ai_addr, res->ai_addrlen);
-  if(n==-1){
-    close(fd);
-    return ERR;
-  }
-
-  nbytes = strlen(buffer);
-  nleft = nbytes;
-  while(nleft > 0){
-    nwritten=write(fd, ptr, nleft);
-    if(nwritten <= 0){
-      close(fd);
-      return ERR;
-    }
-    nleft -= nwritten;
-    ptr += nwritten;
-  
-  }
-  nbytes = 0; 
-  ptr = buffer;
-
-  while(nread > 0){
-    //if( nbytes > BUFFER_SIZE)
-    nread=read(fd, ptr, nleft);
-    if(nread == -1){
-      close(fd);
-      return ERR;
-    }
-    else if(nread==0){  //closed by peer
-      close(fd);   
-      return ERR;            
-    }
-    nbytes += nread;
-    ptr+=nread;
-  }
-
-  close(fd);
   return VALID;
 }
 
@@ -410,7 +371,7 @@ struct Submission *initSubmission() {
   return submission;
 }
 
-void endClient(char **commandArgs, struct User *user, int udp_fd){
+void endClient(char **commandArgs, struct User *user, int udp_fd, char *buffer){
   int i;
   free(user->selected_question);
   free(user->selected_topic);
@@ -432,7 +393,69 @@ void endClient(char **commandArgs, struct User *user, int udp_fd){
   }
 
   free(commandArgs);
+  free(buffer);
   return;
 }
 
+int connectTCP(struct addrinfo *res, struct addrinfo *aux, int *tcp_fd){
+  int fd = 0, n = 0;
+  for (aux = res; aux != NULL; aux = aux->ai_next){
+    if (aux->ai_socktype == SOCK_STREAM){                                     //TCP Socket
+      fd = socket(aux->ai_family, aux->ai_socktype, aux->ai_protocol);
+      if (fd == -1) {
+        printf("Error establishing TCP socket connection\n");
+        freeaddrinfo(res);
+        freeaddrinfo(res->ai_next);
+        return ERR;
+      }
+    }
+  }
+  
+  n = connect(fd, res->ai_addr, res->ai_addrlen);
+  if(n==-1){
+    close(fd);
+    return ERR;
+  }
 
+  *tcp_fd =fd;
+  return VALID;
+}
+
+int sendTCP(char *buffer, int *tcp_fd){
+  int fd = *tcp_fd;
+  int nbytes, nleft, nwritten;
+  char *ptr = buffer;
+  
+  nbytes = strlen(buffer);
+  nleft = nbytes;
+  while(nleft > 0){
+    nwritten=write(fd, ptr, nleft);
+    if(nwritten <= 0){
+      close(fd);
+      return ERR;
+    }
+    nleft -= nwritten;
+    ptr += nwritten;
+  
+  }
+  return VALID;
+}
+
+int receiveTCP(char *buffer,  int msg_size, int *tcp_fd){
+  int nleft = msg_size;
+  int nread = 1;
+  char *ptr = buffer;
+  
+
+  while(nleft>0){ 
+    nread=read(*tcp_fd, ptr, nleft); 
+    if(nread==-1){
+      close(*tcp_fd);
+      return ERR;
+    }
+    else if(nread==0) break;//closed by peer
+    nleft-=nread;
+    ptr+=nread;
+  }
+  return VALID;
+}
