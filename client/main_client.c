@@ -15,7 +15,7 @@ struct Submission *initSubmission();
 int main(int argc, char *argv[]) {
 
   // INITIALIZATION OF GLOBAL VARIABLES
-  int udp_fd, n, status, i;
+  int udp_fd, n, status, i, c;
   int tcp_fd = 0;
   struct addrinfo hints, *res, *aux;
   struct sockaddr_in addr;
@@ -95,8 +95,20 @@ int main(int argc, char *argv[]) {
   }
 
   printf("Welcome!\n>> ");
-  scanf("%s", command);
-  readCommand(buffer, &numSpaces);
+
+  // Read command
+  for (i = 0; i < COMMAND_SIZE; i++) {
+    c = getchar();
+    if (c == ' ') {
+      numSpaces += 1;
+      break;
+    } else if (c == '\n') {
+      break;
+    }
+    command[i] = c;
+  }
+  if (numSpaces == 1)
+    readCommand(buffer, &numSpaces);
 
   // UDP
   while (strcmp(command, "exit") != 0) {
@@ -275,9 +287,22 @@ int main(int argc, char *argv[]) {
     memset(buffer, 0, BUFFER_SIZE);
     memset(command, 0, COMMAND_SIZE);
     printf(">> ");
-    scanf("%s", command);
+
+    // Read command
     numSpaces = 0;
-    readCommand(buffer, &numSpaces);
+    for (i = 0; i < COMMAND_SIZE; i++) {
+      c = getchar();
+      if (c == ' ') {
+        numSpaces += 1;
+        break;
+      } else if (c == '\n') {
+        break;
+      }
+      command[i] = c;
+    }
+    if (numSpaces == 1)
+      readCommand(buffer, &numSpaces);
+
   }
   endClient(commandArgs, user, udp_fd, buffer);
   return 0;
