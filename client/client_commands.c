@@ -230,14 +230,14 @@ int questionGet(char *buffer, int flag, struct User *user, char aux_question[]){
 }
 
 int questionSubmit(struct User *user, char *commandArgs[], struct Submission* submission){
-	int i, imageExists = FALSE;
+	int i;
 	char *aux;
 	char *question;
 	char *text_file;
 	char *image_file;
 	char *ext;
   long file_size, image_size;
-  
+
   // Allocate memory for filename and imagename
 	char *filename = (char*)malloc(BUFFER_SIZE * sizeof(char));
 	char *imagename = (char*)malloc(BUFFER_SIZE * sizeof(char));
@@ -263,14 +263,14 @@ int questionSubmit(struct User *user, char *commandArgs[], struct Submission* su
   // Check if there is a question in the input
 	question = commandArgs[0];
 	if(strlen(question) == 0) {
-		printf("Invalid command format.\n");
+		printf("Invalid command format1.\n");
 		return INVALID;
 	}
 
   // Check if there is a text file in the input with name smaller than 10 chars
 	text_file = commandArgs[1];
 	if((strlen(text_file) == 0) || strlen(question) > QUESTION_SIZE) {
-		printf("Invalid command format.\n");
+		printf("Invalid command format2.\n");
 		return INVALID;
 	}
 
@@ -285,19 +285,21 @@ int questionSubmit(struct User *user, char *commandArgs[], struct Submission* su
   // Check if there is an image in the input, if the format is image_file.ext and if the file exists
 	aux = commandArgs[2];
 	if (strcmp(aux, "") != 0) {
-		imageExists = TRUE;
+		submission->imageExists = TRUE;
 		strcpy(imagename, commandArgs[2]);
 		image_file = strtok(aux, ".");
 		ext = strtok(NULL, " ");
 		if (image_file == NULL || ext == NULL) {
-			printf("Invalid command format.\n");
+			printf("Invalid command format3.\n");
 			return INVALID;
 		}
 		if (!fileExists(imagename)) {
 			printf("Text file or image file does not exist.\n");
 			return INVALID;
 		}
-	}
+	} else {
+    submission->imageExists = FALSE;
+  }
 
   // Save selected question
 	strcpy(user->selected_question, question);
@@ -316,7 +318,7 @@ int questionSubmit(struct User *user, char *commandArgs[], struct Submission* su
   submission->text_size = file_size;
 
 	// Save image file name and extension
-  if (imageExists) {
+  if (submission->imageExists) {
 	  submission->image_name = (char*)malloc(strlen(imagename) * sizeof(char));
 	  if (submission->image_name == NULL) {
 		  printf("Error allocating memory.\n");
@@ -350,7 +352,7 @@ int questionSubmit(struct User *user, char *commandArgs[], struct Submission* su
 }
 
 int answerSubmit(struct User *user, char *commandArgs[], struct Submission* submission) {
-  int i, imageExists = FALSE;
+  int i;
   char *aux;
   char *text_file;
   char *image_file;
@@ -400,7 +402,7 @@ int answerSubmit(struct User *user, char *commandArgs[], struct Submission* subm
   // Check if there is an image in the input, if the format is image_file.ext and if the file exists
   aux = commandArgs[1];
   if (strcmp(aux, "") != 0) {
-    imageExists = TRUE;
+    submission->imageExists = TRUE;
     strcpy(imagename, commandArgs[1]);
     image_file = strtok(aux, ".");
     ext = strtok(NULL, " ");
@@ -412,6 +414,8 @@ int answerSubmit(struct User *user, char *commandArgs[], struct Submission* subm
       printf("Text file or image file does not exist.\n");
       return INVALID;
     }
+  } else {
+    submission->imageExists = FALSE;
   }
 
   // Save text file name
@@ -427,7 +431,7 @@ int answerSubmit(struct User *user, char *commandArgs[], struct Submission* subm
 	strcpy(submission->text_name, filename);
   submission->text_size = file_size;
 
-  if (imageExists) {
+  if (submission->imageExists) {
 	  submission->image_name = (char*)malloc(strlen(imagename) * sizeof(char));
 	  if (submission->image_name == NULL) {
 		  printf("Error allocating memory.\n");
@@ -461,6 +465,101 @@ int answerSubmit(struct User *user, char *commandArgs[], struct Submission* subm
   return VALID;
 }
 
-int sendSubmission(struct Submission *Submission, int tcp_fd){
+//QUS qUserID topic question qsize qdata qIMG [iext isize idata]
+int sendSubmission(struct User *user, struct Submission *submission, char *buffer, int tcp_fd, int type){ //TODO: se der erro a meio, enviar ERR
+  int i = 0, c;
+  FILE *fp;
+  memset(buffer, 0, BUFFER_SIZE);  
+
+  if (type) {
+    sprintf(buffer, "QUS %d %s %s %ld ", user->userId, user->selected_topic, user->selected_question,
+            submission->text_size);
+  } else {
+    sprintf(buffer, "ANS %d %s %s %ld ", user->userId, user->selected_topic, user->selected_question,
+            submission->text_size);
+  }
+  
+  if(!sendTCP(buffer, tcp_fd)) {
+     printf("Error sending msg to server.\n");
+     return ERR;
+  }
+
+  fp = fopen(submission->text_name, "r");
+  if (fp == NULL) {
+    printf("Error opening file %s.\n", submission->text_name);
+    return ERR;
+  }
+
+  memset(buffer, 0, BUFFER_SIZE);
+  while (i < submission->text_size) {
+    c = fgetc(fp);
+    if (c == EOF)
+      break;
+    buffer[i] = c;
+    if (i == (BUFFER_SIZE-1)){
+      
+      if(!sendTCP(buffer, tcp_fd)) {
+        printf("Error sending msg to server.\n");
+        return ERR;
+      }
+      printf("SENT: %s", buffer);
+      memset(buffer, 0, BUFFER_SIZE);
+      i = -1;
+    }
+    i++;
+  }
+
+  if(!sendTCP(buffer, tcp_fd)){
+    printf("Error sending msg to server.\n");
+    return ERR;
+  }
+  memset(buffer, 0, BUFFER_SIZE);
+  fclose(fp);
+
+
+
+  if (!submission->imageExists) { // if there is no image
+    sprintf(buffer, " 0\n");  
+    if(!sendTCP(buffer, tcp_fd)) {
+      printf("Error sending msg to server.\n");
+      return ERR;
+    }
+  } else {
+    fp = fopen(submission->image_name, "r");
+    if (fp == NULL) {
+      printf("Error opening file %s.\n", submission->image_name);
+      return ERR;
+    }
+    sprintf(buffer, " 1 %s %ld ", submission->image_ext, submission->image_size);
+    if(!sendTCP(buffer, tcp_fd)) {
+      printf("Error sending msg to server.\n");
+      return ERR;
+    }
+    i = 0;
+    while (i < submission->image_size) {
+      c = fgetc(fp);
+      if (c == EOF)
+        break;
+      buffer[i] = c;
+      if (i == (BUFFER_SIZE-1)){
+        
+        if(!sendTCP(buffer, tcp_fd)) {
+          printf("Error sending msg to server.\n");
+          return ERR;
+        }
+        //printf("SENT: %s", buffer);
+        memset(buffer, 0, BUFFER_SIZE);
+        i = -1;
+      }
+      i++;
+    }
+    if(!sendTCP(buffer, tcp_fd)){
+      printf("Error sending msg to server.\n");
+      return ERR;
+    }
+     fclose(fp);
+  }
+
+  memset(buffer, 0, BUFFER_SIZE);
   return VALID;
 }

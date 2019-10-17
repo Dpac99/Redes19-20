@@ -52,18 +52,20 @@ int connectTCP(struct addrinfo *res, struct addrinfo *aux, int *tcp_fd){
     close(fd);
     return ERR;
   }
-
+  
   *tcp_fd =fd;
+  //printf("FILE DESCRIPTOR (connect): %d\n", *tcp_fd);
   return VALID;
 }
 
-int sendTCP(char *buffer, int *tcp_fd){
-  int fd = *tcp_fd;
+int sendTCP(char *buffer, int tcp_fd){
+  int fd = tcp_fd;
   int nbytes, nleft, nwritten;
   char *ptr = buffer;
   
   nbytes = strlen(buffer);
   nleft = nbytes;
+  //printf("FILE DESCRIPTOR (send): %d\n", tcp_fd);
   while(nleft > 0){
     nwritten=write(fd, ptr, nleft);
     if(nwritten <= 0){
@@ -77,21 +79,36 @@ int sendTCP(char *buffer, int *tcp_fd){
   return VALID;
 }
 
-int receiveTCP(char *buffer,  int msg_size, int *tcp_fd){
+int receiveTCP(char *buffer,  int msg_size, int tcp_fd){
   int nleft = msg_size;
   int nread = 1;
   char *ptr = buffer;
-  
+  fd_set mask;
+  struct timeval timeout;
+  timeout.tv_sec = 10;
+  timeout.tv_usec = 0;
 
-  while(nleft>0){ 
-    nread=read(*tcp_fd, ptr, nleft); 
+  FD_ZERO(&mask);
+  FD_SET(tcp_fd, &mask);
+  
+  //printf("FILE DESCRIPTOR (receive): %d\n", tcp_fd);
+  while((nleft>0) && select(tcp_fd + 1, &mask, NULL, NULL, &timeout)){ 
+    nread = read(tcp_fd, ptr, nleft); 
+
     if(nread==-1){
-      close(*tcp_fd);
+      close(tcp_fd);
       return ERR;
     }
-    else if(nread==0) break;//closed by peer
+    else if(nread==0){
+      break;//closed by peer
+    } 
+
     nleft-=nread;
     ptr+=nread;
+    FD_ZERO(&mask);
+    FD_SET(tcp_fd, &mask);
   }
+
+  //printf("nread = %d\n", nread);
   return VALID;
 }
