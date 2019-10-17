@@ -245,19 +245,17 @@ int main(int argc, char *argv[]) {
       status = answerSubmit(user, commandArgs, submission);
             if(status == VALID){
         if(connectTCP(res,aux, &tcp_fd)){
-          if(sendSubmission(user, submission, buffer, tcp_fd, 0) == VALID){
-            
+          status = sendSubmission(user, submission, buffer, tcp_fd, 0);
+          if(status == VALID){
             memset(buffer, 0, BUFFER_SIZE);
-            if(receiveTCP(buffer, BUFFER_SIZE, tcp_fd) == VALID){
-              printf("Received: '%s'\n", buffer);
-            }
-
-            else{
-               printf("Receive_tcp failed.\n");
-            }
+            handleANR(buffer, user, tcp_fd);
+          }
+          else if(status == INVALID){
+            printf("Error sending msg to server.\n");
           }
           else{
-            printf("Error sending msg to server.\n");
+            endClient(commandArgs, user, udp_fd, buffer);
+            exit(1);
           }
           if(tcp_fd > 0){
             close(tcp_fd);
