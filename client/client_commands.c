@@ -472,24 +472,24 @@ int answerSubmit(struct User *user, char *commandArgs[], struct Submission* subm
 
 //QUS qUserID topic question qsize qdata qIMG [iext isize idata]
 int sendSubmission(struct User *user, struct Submission *submission, char *buffer, int tcp_fd, int type){ //TODO: se der erro a meio, enviar ERR
-  int i = 0, c;
+  int i = 0, c, img_size = submission->image_size;
   FILE *fp;
   memset(buffer, 0, BUFFER_SIZE);  
 
   if (type) {
     sprintf(buffer, "QUS %d %s %s %ld ", user->userId, user->selected_topic, user->aux_question,
             submission->text_size);
-    printf("Sent: %s\n",buffer);
   } else {
     sprintf(buffer, "ANS %d %s %s %ld ", user->userId, user->selected_topic, user->selected_question,
             submission->text_size);
   }
   
-  if(!sendTCP(buffer, tcp_fd)) {
+  if(sendTCP(buffer, tcp_fd) == ERR) {
      printf("Error sending msg to server.\n");
      return ERR;
   }
-
+  //printf("Sent: '%s'",buffer);
+  
   fp = fopen(submission->text_name, "r");
   if (fp == NULL) {
     printf("Error opening file %s.\n", submission->text_name);
@@ -508,7 +508,7 @@ int sendSubmission(struct User *user, struct Submission *submission, char *buffe
         printf("Error sending msg to server.\n");
         return ERR;
       }
-      printf("SENT: %s", buffer);
+      //printf("'%s'",buffer);
       memset(buffer, 0, BUFFER_SIZE);
       i = -1;
     }
@@ -519,51 +519,62 @@ int sendSubmission(struct User *user, struct Submission *submission, char *buffe
     printf("Error sending msg to server.\n");
     return ERR;
   }
+  //printf("'%s'",buffer);
   memset(buffer, 0, BUFFER_SIZE);
   fclose(fp);
 
-
-
   if (!submission->imageExists) { // if there is no image
     sprintf(buffer, " 0\n");  
-    if(!sendTCP(buffer, tcp_fd)) {
+    if(sendTCP(buffer, tcp_fd) == ERR) {
       printf("Error sending msg to server.\n");
       return ERR;
     }
+    //printf("'%s'",buffer);
   } else {
-    fp = fopen(submission->image_name, "r");
+    fp = fopen(submission->image_name, "rb");
     if (fp == NULL) {
       printf("Error opening file %s.\n", submission->image_name);
       return ERR;
     }
     sprintf(buffer, " 1 %s %ld ", submission->image_ext, submission->image_size);
-    if(!sendTCP(buffer, tcp_fd)) {
+    if(sendTCP(buffer, tcp_fd) == ERR) {
       printf("Error sending msg to server.\n");
       return ERR;
     }
+    //printf("'%s'",buffer);
+    memset(buffer, 0, BUFFER_SIZE);
     i = 0;
-    while (i < submission->image_size) {
+
+    while (i < img_size) {
       c = fgetc(fp);
-      if (c == EOF)
-        break;
       buffer[i] = c;
       if (i == (BUFFER_SIZE-1)){
         
-        if(!sendTCP(buffer, tcp_fd)) {
+        if(sendTCP(buffer, tcp_fd) == ERR) {
           printf("Error sending msg to server.\n");
           return ERR;
         }
-        //printf("SENT: %s", buffer);
+        //printf("'%s'",buffer);
         memset(buffer, 0, BUFFER_SIZE);
+        img_size -= BUFFER_SIZE;
         i = -1;
       }
       i++;
     }
-    if(!sendTCP(buffer, tcp_fd)){
+    if(sendTCP(buffer, tcp_fd) == ERR){
       printf("Error sending msg to server.\n");
       return ERR;
     }
-     fclose(fp);
+    //printf("'%s'",buffer);
+
+    memset(buffer, 0, BUFFER_SIZE);
+    sprintf(buffer, "\n");
+    if(sendTCP(buffer, tcp_fd) == ERR){
+      printf("Error sending msg to server.\n");
+      return ERR;
+    }
+    //printf("'%s'",buffer);
+    fclose(fp);
   }
 
   memset(buffer, 0, BUFFER_SIZE);
