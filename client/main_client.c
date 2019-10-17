@@ -185,13 +185,11 @@ int main(int argc, char *argv[]) {
       status = questionGet(buffer, 1, user, question);
       if(status == VALID){
         if(connectTCP(res,aux, &tcp_fd)){
-          if(sendTCP(buffer, &tcp_fd)){
+          if(sendTCP(buffer, tcp_fd)){
             
             memset(buffer, 0, BUFFER_SIZE);
   
-            if(receiveTCP(buffer, 10, &tcp_fd )){
-              printf("Received: '%s'\n", buffer);
-              receiveTCP(buffer, 10, &tcp_fd);
+            if(receiveTCP(buffer, BUFFER_SIZE, tcp_fd ) == VALID){
               printf("Received: '%s'\n", buffer);
             }
             else{
@@ -215,13 +213,20 @@ int main(int argc, char *argv[]) {
         memset(commandArgs[i], 0, ARG_SIZE);
       }
       parseCommand(buffer, commandArgs);
+      
       status = questionSubmit(user, commandArgs, submission);
       if(status == VALID){
         if(connectTCP(res,aux, &tcp_fd)){
-          if(sendSubmission(user, submission, buffer, tcp_fd) == VALID){
+          if(sendSubmission(user, submission, buffer, tcp_fd, 1) == VALID){
             
             memset(buffer, 0, BUFFER_SIZE);
-  
+            if(receiveTCP(buffer, BUFFER_SIZE, tcp_fd) == VALID){
+              printf("Received: '%s'\n", buffer);
+            }
+
+            else{
+               printf("Receive_tcp failed.\n");
+            }
           }
           else{
             printf("Error sending msg to server.\n");
@@ -241,6 +246,27 @@ int main(int argc, char *argv[]) {
       }
       parseCommand(buffer, commandArgs);
       status = answerSubmit(user, commandArgs, submission);
+            if(status == VALID){
+        if(connectTCP(res,aux, &tcp_fd)){
+          if(sendSubmission(user, submission, buffer, tcp_fd, 0) == VALID){
+            
+            memset(buffer, 0, BUFFER_SIZE);
+            if(receiveTCP(buffer, BUFFER_SIZE, tcp_fd) == VALID){
+              printf("Received: '%s'\n", buffer);
+            }
+
+            else{
+               printf("Receive_tcp failed.\n");
+            }
+          }
+          else{
+            printf("Error sending msg to server.\n");
+          }
+          if(tcp_fd > 0){
+            close(tcp_fd);
+          }
+        }
+      }
     }
 
     else {
@@ -354,6 +380,7 @@ struct Submission *initSubmission() {
 
   submission->text_name = NULL;
   submission->text_content = NULL;
+  submission->imageExists = FALSE;
   submission->image_name = NULL;
   submission->image_content = NULL;
 
