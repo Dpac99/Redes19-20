@@ -121,8 +121,8 @@ int handlePTR(char *buffer, struct User *user, char aux_topic[]){
 
 int handleLQR(char *commandArgs[], struct User *user){
 	char *token;
-	char *UserIds[MAX_QUESTIONS][USER_ID_SIZE];
-	char *NumAnswers[MAX_QUESTIONS][USER_ID_SIZE];
+	char UserIds[MAX_QUESTIONS][USER_ID_SIZE +1];
+	char NumAnswers[MAX_QUESTIONS][USER_ID_SIZE + 1];
 	int n_questions, i, num, err = 0;
 
 	if((strcmp(commandArgs[0], QUESTION_LIST_RESPONSE) == 0) && isnumber(commandArgs[1])){
