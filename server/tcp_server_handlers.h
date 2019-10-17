@@ -2,14 +2,14 @@
 #define __TCP_SERVER_HANDLERS_H__
 
 int parseGetQuestion(char *info, char *topic, char *question);
-int handleGetQuestion(char *info, char *dest);
+int handleGetQuestion(int fd);
 int parseSubmitQuestion(char *info, int *id, char *topic, char *question,
                         int *size, char *data, int *qIMG, char *ext, int *iSize,
                         char *iData);
-int handleSubmitQuestion(char *info, char *dest);
+int handleSubmitQuestion(int fd);
 int parseSubmitAnswer(char *info, int *id, char *topic, char *question,
                       int *size, char *data, int *aIMG, char *ext, int *iSize,
                       char *iData);
-int handleSubmitAnswer(char *info, char *dest);
+int handleSubmitAnswer(int fd);
 
 #endif

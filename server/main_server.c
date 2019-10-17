@@ -65,73 +65,42 @@ int udpHandler(char *buffer) {
   return 0;
 }
 
-int tcpHandler(char *buffer) {
-  int size = strlen(buffer);
-  char command[4], info[size - 3];
-  int i;
-
-  if (buffer[size - 1] != '\n') {
-    memset(buffer, 0, BUFFER_SIZE);
-    sprintf(buffer, "%s\n", ERROR);
-    return 0;
-  }
-
-  for (i = 0; i < size; i++) {
-    if (i < 3) {
-      command[i] = buffer[i];
-    } else if (i > 3) {
-      info[i - 4] = buffer[i];
-    } else if (i == 3) {
-      command[i] = '\0';
-    }
-  }
-  info[i - 4] = '\0';
-  memset(buffer, 0, BUFFER_SIZE);
-
+int tcpHandler(char *command, int fd) {
   if (strcmp(command, GET_QUESTION) == 0) {
-    return handleGetQuestion(info, buffer);
+    // return handleGetQuestion(fd);
   } else if (strcmp(command, SUBMIT_QUESTION) == 0) {
-    return handleSubmitQuestion(info, buffer);
+    return handleSubmitQuestion(fd);
   } else if (strcmp(command, SUBMIT_ANSWER) == 0) {
-    return handleSubmitAnswer(info, buffer);
+    return handleSubmitAnswer(fd);
   } else {
-    sprintf(buffer, "%s\n", ERROR);
+    printf("\tERR2\n");
+    write(fd, "ERR\n", 4);
   }
 
   return 0;
 }
 
-void tcpCommunicate(int sockfd) {
-  int n, nsent;
-  char buffer[BUFFER_SIZE], *ptr;
-  memset(buffer, 0, BUFFER_SIZE);
+void tcpCommunicate(int fd) {
+  char command[5];
 
-  n = recv(sockfd, buffer, BUFFER_SIZE, 0);
-  if (n == -1) {
-    close(sockfd);
-    if (flag)
-      printf("Error with read: %d\n", errno);
-    exit(flag);
+  int nread = 0;
+
+  printf("\tRECEIVED: ");
+  while (nread < 4) {
+    nread += read(fd, command + nread, 4 - nread);
   }
 
-  printf("\tRECEIVED: %s", buffer);
+  printf("%s", command);
 
-  tcpHandler(buffer);
-  n = strlen(buffer);
-
-  ptr = &buffer[0];
-  printf("\tSENT: %s", buffer);
-
-  while (n > 0) {
-    if ((nsent = write(sockfd, ptr, n)) <= 0) {
-      close(sockfd);
-      if (flag)
-        printf("Error with write: %d\n", errno);
-      exit(flag);
-    }
-    n -= nsent;
-    ptr += nsent;
+  if (command[3] != ' ') {
+    printf("\tERR1\n");
+    write(fd, "ERR\n", 4);
+    return;
   }
+
+  command[3] = 0;
+
+  tcpHandler(command, fd);
 }
 
 void initFS() {

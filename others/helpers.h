@@ -11,8 +11,9 @@ int isValidId(char *userId);
 int isValidTopic(char *topic);
 int parseCommand(char *buffer, char *commandArgs[]);
 bool fileExists(char *filename);
-char* copyFile(char* filename);
-long fileSize(char *filename);
-void checkFileContent(struct Submission* submission);
+char *copyFile(char *filename);
+void shiftLeft(char *string, int shiftLength);
+void deleteDir(const char path[]);
+void checkFileContent(struct Submission *submission);
 
 #endif
