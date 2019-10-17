@@ -70,10 +70,12 @@
 #define MAX_TOPICS					99
 #define MAX_QUESTIONS				99
 #define MAX_ANSWERS					99
+
 #define USER_ID_SIZE				5
 #define REGISTER_REG_LENGTH		 	5	// after register/reg: " *****"
 #define TOPIC_LIST_LENGTH		 	0 	// after topic_list/tl: ""
 #define QUESTION_LIST_LENGTH		0 	// after question_list/ql: ""
+#define QUR_SIZE					8
 
 #define VALID					 	1
 #define INVALID				 	 	0
@@ -83,6 +85,7 @@ struct User{
 	int userId;
 	char *selected_topic;		
 	char *selected_question;
+	char *aux_question;
 	char **topics;
 	char **questions;
 	int num_topics;

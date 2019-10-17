@@ -82,10 +82,11 @@ int sendTCP(char *buffer, int tcp_fd){
 int receiveTCP(char *buffer,  int msg_size, int tcp_fd){
   int nleft = msg_size;
   int nread = 1;
+  int ntotal = 0;
   char *ptr = buffer;
   fd_set mask;
   struct timeval timeout;
-  timeout.tv_sec = 10;
+  timeout.tv_sec = 2;
   timeout.tv_usec = 0;
 
   FD_ZERO(&mask);
@@ -103,12 +104,13 @@ int receiveTCP(char *buffer,  int msg_size, int tcp_fd){
       break;//closed by peer
     } 
 
-    nleft-=nread;
-    ptr+=nread;
+    nleft -= nread;
+    ptr += nread;
+    ntotal += nread;
     FD_ZERO(&mask);
     FD_SET(tcp_fd, &mask);
   }
 
   //printf("nread = %d\n", nread);
-  return VALID;
+  return ntotal;
 }

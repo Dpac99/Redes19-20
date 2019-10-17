@@ -170,7 +170,7 @@ int questionList(char *buffer, struct User *user, int numSpaces) {
 }
 
 ////////////////// TCP COMMANDS ///////////////////////////////////
-int questionGet(char *buffer, int flag, struct User *user, char aux_question[], int numSpaces){	//TODO: get question from the question list
+int questionGet(char *buffer, int flag, struct User *user, int numSpaces){	//TODO: get question from the question list
 	char *token;
 	int i, status = INVALID, num, buffer_size, n_questions = user->num_questions;
 	char *question;
@@ -222,9 +222,9 @@ int questionGet(char *buffer, int flag, struct User *user, char aux_question[], 
 			printf("Question %s doesn't exist. Try again.\n", question);
 
 	}
-	strcpy(aux_question, question);
+	strcpy(user->aux_question, question);
 	memset(buffer, 0, BUFFER_SIZE);
-	sprintf(buffer, "%s %s %s\n", GET_QUESTION, user->selected_topic, aux_question);
+	sprintf(buffer, "%s %s %s\n", GET_QUESTION, user->selected_topic, user->aux_question);
 
 	return VALID;
 }
@@ -302,7 +302,7 @@ int questionSubmit(struct User *user, char *commandArgs[], struct Submission* su
   }
 
   // Save selected question
-	strcpy(user->selected_question, question);
+	strcpy(user->aux_question, question);
 
 	// Save text file name
 	submission->text_name = (char*)malloc(strlen(filename) * sizeof(char));
@@ -477,8 +477,9 @@ int sendSubmission(struct User *user, struct Submission *submission, char *buffe
   memset(buffer, 0, BUFFER_SIZE);  
 
   if (type) {
-    sprintf(buffer, "QUS %d %s %s %ld ", user->userId, user->selected_topic, user->selected_question,
+    sprintf(buffer, "QUS %d %s %s %ld ", user->userId, user->selected_topic, user->aux_question,
             submission->text_size);
+    printf("Sent: %s\n",buffer);
   } else {
     sprintf(buffer, "ANS %d %s %s %ld ", user->userId, user->selected_topic, user->selected_question,
             submission->text_size);
