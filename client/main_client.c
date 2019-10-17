@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
   struct User *user;
   struct Submission *submission;
   char *buffer, **commandArgs, *port, *server_IP, command[COMMAND_SIZE];
-  char topic[TOPIC_SIZE], question[QUESTION_SIZE];
+  char topic[TOPIC_SIZE];
 
   user = initUser();
   submission = initSubmission();
@@ -174,15 +174,14 @@ int main(int argc, char *argv[]) {
     }
 
     else if (strcmp(command, "question_get") == 0) {
-      status = questionGet(buffer, 0, user, question);
+      status = questionGet(buffer, 0, user);
       if(status == VALID){
-        printf("Question: '%s'.\n Sending: %s", question, buffer);
+        printf("Question: '%s'.\n Sending: %s", user->aux_question, buffer);
       }
     
     }
-
     else if (strcmp(command, "qg") == 0) {
-      status = questionGet(buffer, 1, user, question);
+      status = questionGet(buffer, 1, user);
       if(status == VALID){
         if(connectTCP(res,aux, &tcp_fd)){
           if(sendTCP(buffer, tcp_fd)){
@@ -217,19 +216,17 @@ int main(int argc, char *argv[]) {
       status = questionSubmit(user, commandArgs, submission);
       if(status == VALID){
         if(connectTCP(res,aux, &tcp_fd)){
-          if(sendSubmission(user, submission, buffer, tcp_fd, 1) == VALID){
-            
+          status = sendSubmission(user, submission, buffer, tcp_fd, 1);
+          if(status == VALID){
             memset(buffer, 0, BUFFER_SIZE);
-            if(receiveTCP(buffer, BUFFER_SIZE, tcp_fd) == VALID){
-              printf("Received: '%s'\n", buffer);
-            }
-
-            else{
-               printf("Receive_tcp failed.\n");
-            }
+            handleQUR(buffer, user,  tcp_fd);  
+          }
+          else if(status == INVALID){
+            printf("Error sending msg to server.\n");
           }
           else{
-            printf("Error sending msg to server.\n");
+            endClient(commandArgs, user, udp_fd, buffer);
+            exit(1);
           }
           if(tcp_fd > 0){
             close(tcp_fd);
@@ -333,6 +330,12 @@ struct User *initUser() {
     exit(1);
   }
 
+  user->aux_question = (char *)malloc(QUESTION_SIZE * sizeof(char));
+  if (user->aux_question == NULL) {
+    printf("Error allocating memory.\n");
+    exit(1);
+  }
+
   user->topics = (char **)malloc(MAX_TOPICS * sizeof(char *));
   if (user->topics == NULL) {
     printf("Error allocating memory.\n");
@@ -391,6 +394,7 @@ void endClient(char **commandArgs, struct User *user, int udp_fd, char *buffer){
   int i;
   free(user->selected_question);
   free(user->selected_topic);
+  free(user->aux_question);
   
   if(udp_fd > 0){
     close(udp_fd);
