@@ -1228,7 +1228,7 @@ int handleSubmitAnswer(int fd) {
         fputc(buffer[nprocimg + i], f);
       }
 
-      int naux = N==0? ndataimg + 1: ndataimg;
+      int naux = ndataimg + 1;
       int chunk = 0;
       while (naux > 0) {
         memset(buffer, 0, BUFFER_SIZE);
@@ -1245,7 +1245,7 @@ int handleSubmitAnswer(int fd) {
         printf("%s", buffer);
       }
 
-      if (N==0 && buffer[chunk - 1] != '\n') {
+      if (buffer[chunk - 1] != '\n') {
         memset(path, 0, 64);
         sprintf(path, "%s/%s/%s/%s_%s", TOPICS,topic,question, question, AN);
         deleteDir(path);
