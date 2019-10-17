@@ -81,6 +81,7 @@ int handleGetQuestion(int fd) {
     return -1;
     ;
   }
+  printf("%s", s);
 
   // Parse info
   err = parseGetQuestion(buffer, topic, question);
@@ -101,6 +102,7 @@ int handleGetQuestion(int fd) {
   err = fileExists(path);
   if (err == 0) { // Check if path exists
     writeTCP(fd, "EOF\n", 4);
+    printf("EOF\n");
     return 0;
   } else if (err == -1) {
     writeTCP(fd, errS, 4);
@@ -205,7 +207,6 @@ int handleGetQuestion(int fd) {
   if (f == NULL) {
     writeTCP(fd, errS, 4);
     return -1;
-    ;
   }
 
   // read qimg and ext
@@ -213,7 +214,6 @@ int handleGetQuestion(int fd) {
   if (err < 0) {
     writeTCP(fd, errS, 4);
     return -1;
-    ;
   }
 
   if (qimg == 0) {
@@ -222,21 +222,19 @@ int handleGetQuestion(int fd) {
     if (err < 0) {
       writeTCP(fd, errS, 4);
       return -1;
-      ;
     }
     err = writeTCP(fd, s, 3);
     if (err < 0) {
       writeTCP(fd, errS, 4);
       return -1;
-      ;
     }
+    printf("%s", s);
   } else { // If qimg == 1
     memset(filename, 0, 128);
     err = sprintf(filename, "%s/%s/%s.%s", path, DATA, IMG, ext);
     if (err < 0) {
       writeTCP(fd, errS, 4);
       return -1;
-      ;
     }
 
     // get size of data
@@ -244,7 +242,6 @@ int handleGetQuestion(int fd) {
     if (size < 1) {
       writeTCP(fd, errS, 4);
       return -1;
-      ;
     }
 
     // write qimg, ext and size
@@ -253,18 +250,18 @@ int handleGetQuestion(int fd) {
     if (err < 0) {
       writeTCP(fd, errS, 4);
       return -1;
-      ;
     }
 
     err = writeTCP(fd, s, strlen(s));
     if (err < 0) {
       writeTCP(fd, errS, 4);
       return -1;
-      ;
     }
 
+    printf("%s", s);
+
     // write imgdata
-    f = fopen(filename, "r");
+    f = fopen(filename, "rb");
     if (f == NULL) {
       writeTCP(fd, errS, 4);
       return -1;
@@ -279,16 +276,16 @@ int handleGetQuestion(int fd) {
       if (err != chunk && feof(f)) {
         writeTCP(fd, errS, 4);
         return -1;
-        ;
       }
       err = writeTCP(fd, buffer, chunk);
       if (err < 0) {
         writeTCP(fd, errS, 4);
         return -1;
-        ;
       }
       nleft -= chunk;
     }
+
+    printf("[-------SENT %d BYTES OF DATA------>]", size);
 
     fclose(f);
   }
@@ -300,8 +297,8 @@ int handleGetQuestion(int fd) {
   dir = opendir(path);
   if (dir != NULL) {
     while ((ent = readdir(dir)) != NULL) {
-      if ((strcmp(ent->d_name, ".") * strcmp(ent->d_name, "..") *
-           strcmp(ent->d_name, DATA)) != 0) {
+      if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0 &&
+          strcmp(ent->d_name, DATA) != 0) {
         strcpy(answers[i++], ent->d_name);
       }
     }
@@ -318,7 +315,6 @@ int handleGetQuestion(int fd) {
   if (err < 0) {
     writeTCP(fd, errS, 4);
     return -1;
-    ;
   }
 
   err = writeTCP(fd, s, strlen(s));
@@ -327,18 +323,21 @@ int handleGetQuestion(int fd) {
     return -1;
   }
 
+  printf("%s", s);
+
   // Get info and data for last 10 answers. Also writes
-  while (N-- > 0) {
+  for (int i = N - 1; i >= 0; i--) {
     memset(filename, 0, 128);
 
     // Get dir name
-    err = sprintf(filename, "%s/%s", path, answers[N]);
+    err = sprintf(filename, "%s/%s", path, answers[i]);
     if (err < 0) {
       writeTCP(fd, errS, 4);
       return -1;
     }
 
-    char AN[3];
+    char AN[4];
+    memset(AN, 0, 4);
     getAnswerNumber(filename, AN);
 
     char s[8];
@@ -354,6 +353,8 @@ int handleGetQuestion(int fd) {
       writeTCP(fd, errS, 4);
       return -1;
     }
+
+    printf("%s", s);
 
     // Get user id
     err = sprintf(filename + strlen(filename), "/%s", USER);
@@ -378,7 +379,7 @@ int handleGetQuestion(int fd) {
 
     // Get dataSize
     memset(filename, 0, 128);
-    err = sprintf(filename, "%s/%s/%s", path, answers[N], ANS_DATA);
+    err = sprintf(filename, "%s/%s/%s", path, answers[i], ANS_DATA);
     if (err < 0) {
       writeTCP(fd, errS, 4);
       return -1;
@@ -403,6 +404,8 @@ int handleGetQuestion(int fd) {
       writeTCP(fd, errS, 4);
       return -1;
     }
+
+    printf("%s", resp);
 
     // Open, read and send data file
 
@@ -429,12 +432,14 @@ int handleGetQuestion(int fd) {
       nleft -= chunk;
     }
 
+    printf("[-------SENT %d BYTES OF DATA------>]", size);
+
     fclose(f);
 
     // get image info
 
     memset(filename, 0, 128);
-    err = sprintf(filename, "%s/%s/%s", path, answers[N], IMG_DATA);
+    err = sprintf(filename, "%s/%s/%s", path, answers[i], IMG_DATA);
     if (err < 0) {
       writeTCP(fd, errS, 4);
       return -1;
@@ -446,6 +451,7 @@ int handleGetQuestion(int fd) {
       return -1;
     }
 
+    memset(ext, 0, 4);
     // read qimg and ext
     err = fscanf(f, "%d %s", &qimg, ext);
     if (err < 0) {
@@ -455,7 +461,7 @@ int handleGetQuestion(int fd) {
 
     if (qimg == 0) {
       char s[8];
-      err = N == 0 ? sprintf(s, " %d ", qimg) : sprintf(s, " %d%s", qimg, eol);
+      err = i == 0 ? sprintf(s, " %d ", qimg) : sprintf(s, " %d%s", qimg, eol);
       if (err < 0) {
         writeTCP(fd, errS, 4);
         return -1;
@@ -465,9 +471,12 @@ int handleGetQuestion(int fd) {
         writeTCP(fd, errS, 4);
         return -1;
       }
+
+      printf("%s", s);
+
     } else { // If qimg == 1
       memset(filename, 0, 128);
-      err = sprintf(filename, "%s/%s/%s.%s", path, answers[N], IMG, ext);
+      err = sprintf(filename, "%s/%s/%s.%s", path, answers[i], IMG, ext);
       if (err < 0) {
         writeTCP(fd, errS, 4);
         return -1;
@@ -494,8 +503,10 @@ int handleGetQuestion(int fd) {
         return -1;
       }
 
+      printf("%s", s);
+
       // write imgdata
-      f = fopen(filename, "r");
+      f = fopen(filename, "rb");
       if (f == NULL) {
         writeTCP(fd, errS, 4);
         return -1;
@@ -518,10 +529,14 @@ int handleGetQuestion(int fd) {
         nleft -= chunk;
       }
 
+      printf("[-------SENT %d BYTES OF DATA------>]", size);
+
       fclose(f);
 
-      if (N == 0) {
+      if (i == 0) {
         writeTCP(fd, eol, 1);
+      } else {
+        writeTCP(fd, " ", 1);
       }
     }
   }
@@ -529,7 +544,8 @@ int handleGetQuestion(int fd) {
   return 0;
 }
 
-int parseSubmitQuestion(char *buffer, int *uid, char *topic, char *question,int *size) {
+int parseSubmitQuestion(char *buffer, int *uid, char *topic, char *question,
+                        int *size) {
 
   int i = 0, t = 0, q = 0;
 
@@ -617,7 +633,7 @@ int handleSubmitQuestion(int fd) {
   FD_SET(fd, &mask);
 
   sprintf(response, "%s ", SUBMIT_QUESTION_RESPONSE);
-  memset(buffer,0, BUFFER_SIZE);
+  memset(buffer, 0, BUFFER_SIZE);
 
   nread = read(fd, buffer,
                39); // 4 spaces + max_topic + max_question + max_size + uid_size
@@ -627,7 +643,7 @@ int handleSubmitQuestion(int fd) {
   nproc = parseSubmitQuestion(buffer, &uid, topic, question, &size);
   if (nproc < 0) {
     memset(path, 0, 64);
-    sprintf(path, "%s/%s/%s", TOPICS,topic,question);
+    sprintf(path, "%s/%s/%s", TOPICS, topic, question);
     sprintf(response + strlen(response), "%s\n", NOK);
     write(fd, response, strlen(response));
     return 0;
@@ -754,11 +770,10 @@ int handleSubmitQuestion(int fd) {
       int n = read(fd, buffer, chunk);
       naux -= n;
       int nsaved = fwrite(buffer, sizeof(char), n, f);
-      if(nsaved != n){
+      if (nsaved != n) {
         writeTCP(fd, "ERR\n", 4);
         return 1;
       }
-      printf("%s", buffer);
       memset(buffer, 0, BUFFER_SIZE);
     }
   } else {
@@ -766,6 +781,8 @@ int handleSubmitQuestion(int fd) {
       fputc(buffer[nproc + l], f);
     }
   }
+
+  printf("[<------RECEIVED %d BYTES OF DATA-------]", size);
 
   fclose(f);
 
@@ -782,7 +799,7 @@ int handleSubmitQuestion(int fd) {
 
   if (buffer[0] != ' ') {
     memset(path, 0, 64);
-    sprintf(path, "%s/%s/%s", TOPICS,topic,question);
+    sprintf(path, "%s/%s/%s", TOPICS, topic, question);
     deleteDir(path);
     sprintf(response + strlen(response), "%s\n", NOK);
     write(fd, response, strlen(response));
@@ -812,7 +829,7 @@ int handleSubmitQuestion(int fd) {
   if (qimg == 0) {
     if (buffer[2] != '\n') {
       memset(path, 0, 64);
-      sprintf(path, "%s/%s/%s", TOPICS,topic,question);
+      sprintf(path, "%s/%s/%s", TOPICS, topic, question);
       deleteDir(path);
       sprintf(response + strlen(response), "%s\n", NOK);
       write(fd, response, strlen(response));
@@ -899,7 +916,7 @@ int handleSubmitQuestion(int fd) {
         fputc(buffer[nprocimg + i], f);
       }
 
-      int naux = ndataimg+1;
+      int naux = ndataimg + 1;
       int chunk = 0;
       while (naux > 0) {
         memset(buffer, 0, BUFFER_SIZE);
@@ -913,25 +930,28 @@ int handleSubmitQuestion(int fd) {
           writeTCP(fd, "ERR\n", 4);
           return -1;
         }
-        printf("%s", buffer);
       }
 
-      if (buffer[chunk-1] != '\n') {
+      if (buffer[chunk - 1] != '\n') {
         memset(path, 0, 64);
-        sprintf(path, "%s/%s/%s", TOPICS,topic,question);
+        sprintf(path, "%s/%s/%s", TOPICS, topic, question);
         deleteDir(path);
         fclose(f);
         sprintf(response + strlen(response), "%s\n", NOK);
-        write(fd, response, strlen(response));
+        writeTCP(fd, response, strlen(response));
+        printf("SENT: %s", response);
         return 0;
       }
     }
+
+    printf("[<------RECEIVED %d BYTES OF DATA-------]", isize);
 
     fclose(f);
   }
 
   sprintf(response + strlen(response), "%s\n", OK);
-  write(fd, response, strlen(response));
+  writeTCP(fd, response, strlen(response));
+  printf("SENT: %s", response);
 
   printf("\n");
   return 0;
@@ -1045,6 +1065,7 @@ int handleSubmitAnswer(int fd) {
     writeTCP(fd, "ERR\n", 4);
     return -1;
   }
+  printf("%s", buffer);
 
   fclose(f);
 
@@ -1083,11 +1104,10 @@ int handleSubmitAnswer(int fd) {
       int n = read(fd, buffer, chunk);
       naux -= n;
       int nsaved = fwrite(buffer, sizeof(char), n, f);
-      if(nsaved != n){
+      if (nsaved != n) {
         writeTCP(fd, "ERR\n", 4);
         return 1;
       }
-      printf("%s", buffer);
       memset(buffer, 0, BUFFER_SIZE);
     }
   } else {
@@ -1095,6 +1115,8 @@ int handleSubmitAnswer(int fd) {
       fputc(buffer[nproc + l], f);
     }
   }
+
+  printf("[<------RECEIVED %d BYTES OF DATA-------]", size);
 
   fclose(f);
 
@@ -1111,7 +1133,7 @@ int handleSubmitAnswer(int fd) {
 
   if (buffer[0] != ' ') {
     memset(path, 0, 64);
-    sprintf(path, "%s/%s/%s/%s_%s", TOPICS,topic,question, question, AN);
+    sprintf(path, "%s/%s/%s/%s_%s", TOPICS, topic, question, question, AN);
     deleteDir(path);
     sprintf(response + strlen(response), "%s\n", NOK);
     write(fd, response, strlen(response));
@@ -1141,7 +1163,7 @@ int handleSubmitAnswer(int fd) {
   if (qimg == 0) {
     if (buffer[2] != '\n') {
       memset(path, 0, 64);
-    sprintf(path, "%s/%s/%s/%s_%s", TOPICS,topic,question, question, AN);
+      sprintf(path, "%s/%s/%s/%s_%s", TOPICS, topic, question, question, AN);
       deleteDir(path);
       sprintf(response + strlen(response), "%s\n", NOK);
       write(fd, response, strlen(response));
@@ -1238,22 +1260,23 @@ int handleSubmitAnswer(int fd) {
         int n = read(fd, buffer, chunk);
         naux -= n;
         int nsaved = fwrite(buffer, sizeof(char), n, f);
-      if(nsaved != n){
-        writeTCP(fd, "ERR\n", 4);
-        return 1;
-      }
-        printf("%s", buffer);
+        if (nsaved != n) {
+          writeTCP(fd, "ERR\n", 4);
+          return 1;
+        }
       }
 
       if (buffer[chunk - 1] != '\n') {
         memset(path, 0, 64);
-        sprintf(path, "%s/%s/%s/%s_%s", TOPICS,topic,question, question, AN);
+        sprintf(path, "%s/%s/%s/%s_%s", TOPICS, topic, question, question, AN);
         deleteDir(path);
         sprintf(response + strlen(response), "%s\n", NOK);
         write(fd, response, strlen(response));
         return 0;
       }
     }
+
+    printf("[<------RECEIVED %d BYTES OF DATA-------]", isize);
 
     fclose(f);
   }
