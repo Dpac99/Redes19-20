@@ -67,7 +67,7 @@ int udpHandler(char *buffer) {
 
 int tcpHandler(char *command, int fd) {
   if (strcmp(command, GET_QUESTION) == 0) {
-    // return handleGetQuestion(fd);
+    return handleGetQuestion(fd);
   } else if (strcmp(command, SUBMIT_QUESTION) == 0) {
     return handleSubmitQuestion(fd);
   } else if (strcmp(command, SUBMIT_ANSWER) == 0) {
@@ -81,7 +81,7 @@ int tcpHandler(char *command, int fd) {
 }
 
 void tcpCommunicate(int fd) {
-  char command[5];
+  char command[8];
 
   int nread = 0;
 
@@ -234,6 +234,7 @@ int main(int argc, char *argv[]) {
     nready = select(maxfd, &rfds, (fd_set *)NULL, (fd_set *)NULL,
                     (struct timeval *)NULL);
     if (nready < 0) {
+      shutdown(resp_fd, SHUT_RDWR);
       close(tcp_fd);
       close(udp_fd);
       if (flag)
@@ -317,6 +318,7 @@ int main(int argc, char *argv[]) {
                     service, sizeof service, 0);
         printf("[+]TCP Communication: Client[%s@%s]\n", host, service);
         tcpCommunicate(resp_fd);
+        shutdown(resp_fd, SHUT_RDWR);
         close(resp_fd);
         printf("[+]End of TCP with client[%s@%s]\n\n", host, service);
         exit(0);

@@ -1,4 +1,4 @@
-all: clean main_client main_server
+all: main_client main_server
 main_server:
 	gcc -g -o main_server -Wall -std=gnu11 server/* others/*
 main_client:	
