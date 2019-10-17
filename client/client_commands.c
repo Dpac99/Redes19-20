@@ -514,6 +514,9 @@ int sendSubmission(struct User *user, struct Submission *submission, char *buffe
     return ERR;
   }
   memset(buffer, 0, BUFFER_SIZE);
+  fclose(fp);
+
+
 
   if (!submission->imageExists) { // if there is no image
     sprintf(buffer, " 0\n");  
@@ -522,13 +525,18 @@ int sendSubmission(struct User *user, struct Submission *submission, char *buffe
       return ERR;
     }
   } else {
+    fp = fopen(submission->image_name, "r");
+    if (fp == NULL) {
+      printf("Error opening file %s.\n", submission->image_name);
+      return ERR;
+    }
     sprintf(buffer, " 1 %s %ld ", submission->image_ext, submission->image_size);
     if(!sendTCP(buffer, tcp_fd)) {
       printf("Error sending msg to server.\n");
       return ERR;
     }
     i = 0;
-    while (i < submission->text_size) {
+    while (i < submission->image_size) {
       c = fgetc(fp);
       if (c == EOF)
         break;
@@ -539,7 +547,7 @@ int sendSubmission(struct User *user, struct Submission *submission, char *buffe
           printf("Error sending msg to server.\n");
           return ERR;
         }
-        printf("SENT: %s", buffer);
+        //printf("SENT: %s", buffer);
         memset(buffer, 0, BUFFER_SIZE);
         i = -1;
       }
@@ -549,9 +557,8 @@ int sendSubmission(struct User *user, struct Submission *submission, char *buffe
       printf("Error sending msg to server.\n");
       return ERR;
     }
+     fclose(fp);
   }
-
-  fclose(fp);
 
   memset(buffer, 0, BUFFER_SIZE);
   return VALID;
