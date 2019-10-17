@@ -77,46 +77,42 @@ int handleLTR(char *commandArgs[], struct User *user) {
   return VALID;
 }
 
-int handlePTR(char *buffer, struct User *user, char aux_topic[]){
-	char *token;
-	int count = 0;
-	int size = strlen(buffer);
+int handlePTR(char *buffer, struct User *user, char aux_topic[]) {
+  char *token;
+  int count = 0;
+  int size = strlen(buffer);
 
-	token = strtok(buffer, " ");
-	count += strlen(token);
+  token = strtok(buffer, " ");
+  count += strlen(token);
 
-	if (strcmp(token, TOPIC_PROPOSE_RESPONSE) == 0){
-		token = strtok(NULL, " ");
-		count += strlen(token);
+  if (strcmp(token, TOPIC_PROPOSE_RESPONSE) == 0) {
+    token = strtok(NULL, " ");
+    count += strlen(token);
 
-		if(strcmp(token, OK) == 0){
-			strcpy(user->selected_topic, aux_topic);
-			printf("Topic '%s' proposed successfully.\n", user->selected_topic);
-		}
-		else if(strcmp(token, NOK) == 0){
-			printf("Failed to propose topic '%s'.\n", aux_topic);
-		}
-		else if(strcmp(token, DUP) == 0){
-			printf("Topic '%s' already exists.\n", aux_topic);
-		}
-		else if(strcmp(token, FULL)){
-			printf("Couldn't propose topic '%s'. There are already too many top\n", aux_topic);
-		}
-		else{
-			printf("Error receiving answer from server.\n");
-			return INVALID;
-		}
-		
-		if((size - count) > 1){
-			printf("Error receiving answer from server.\n");
-			return INVALID;
-		}
-	}
-	else{
-		printf("Error receiving answer from server.\n");
-		return INVALID;
-	}
-	return VALID;
+    if (strcmp(token, OK) == 0) {
+      strcpy(user->selected_topic, aux_topic);
+      printf("Topic '%s' proposed successfully.\n", user->selected_topic);
+    } else if (strcmp(token, NOK) == 0) {
+      printf("Failed to propose topic '%s'.\n", aux_topic);
+    } else if (strcmp(token, DUP) == 0) {
+      printf("Topic '%s' already exists.\n", aux_topic);
+    } else if (strcmp(token, FULL)) {
+      printf("Couldn't propose topic '%s'. There are already too many top\n",
+             aux_topic);
+    } else {
+      printf("Error receiving answer from server.\n");
+      return INVALID;
+    }
+
+    if ((size - count) > 1) {
+      printf("Error receiving answer from server.\n");
+      return INVALID;
+    }
+  } else {
+    printf("Error receiving answer from server.\n");
+    return INVALID;
+  }
+  return VALID;
 }
 
 int handleLQR(char *commandArgs[], struct User *user){
@@ -199,82 +195,80 @@ int handleLQR(char *commandArgs[], struct User *user){
 	return VALID;
 }
 
-int handleQUR(char *buffer, struct User *user, char aux_question[]){
-	char *token;
-	int count = 0;
-	int size = strlen(buffer);
+int handleQUR(char *buffer, struct User *user, char aux_question[]) {
+  char *token;
+  int count = 0;
+  int size = strlen(buffer);
 
-	token = strtok(buffer, " ");
-	count += strlen(token);
+  token = strtok(buffer, " ");
+  count += strlen(token);
 
-	if (strcmp(token, SUBMIT_QUESTION_RESPONSE) == 0){
-		token = strtok(NULL, " ");
-		count += strlen(token);
+  if (strcmp(token, SUBMIT_QUESTION_RESPONSE) == 0) {
+    token = strtok(NULL, " ");
+    count += strlen(token);
 
-		if(strcmp(token, OK) == 0){
-			strcpy(user->selected_question, aux_question);
-			printf("Question '%s' submited successfully.\n", user->selected_question);
-		}
-		else if(strcmp(token, NOK) == 0){
-			printf("Failed to submit quesiton '%s'.\n", aux_question);
-		}
-		else if(strcmp(token, DUP) == 0){
-			printf("Question '%s' already exists in the topic '%s'.\n", aux_question, user->selected_topic);
-		}
-		else if(strcmp(token, FULL)){
-			printf("Couldn't submit question '%s'. Topic '%s' can't accept more questions for now.\n", aux_question, user->selected_topic);
-		}
-		else{
-			printf("Error receiving answer from server.\n");
-			return ERR;
-		}
-		
-		if((size - count) > 1){
-			printf("Error receiving answer from server.\n");
-			return INVALID;
-		}
-	}
-	else{
-		printf("Error receiving answer from server.\n");
-		return INVALID;
-	}
-	return VALID;
+    if (strcmp(token, OK) == 0) {
+      strcpy(user->selected_question, aux_question);
+      printf("Question '%s' submited successfully.\n", user->selected_question);
+    } else if (strcmp(token, NOK) == 0) {
+      printf("Failed to submit quesiton '%s'.\n", aux_question);
+    } else if (strcmp(token, DUP) == 0) {
+      printf("Question '%s' already exists in the topic '%s'.\n", aux_question,
+             user->selected_topic);
+    } else if (strcmp(token, FULL)) {
+      printf("Couldn't submit question '%s'. Topic '%s' can't accept more "
+             "questions for now.\n",
+             aux_question, user->selected_topic);
+    } else {
+      printf("Error receiving answer from server.\n");
+      return ERR;
+    }
+
+    if ((size - count) > 1) {
+      printf("Error receiving answer from server.\n");
+      return INVALID;
+    }
+  } else {
+    printf("Error receiving answer from server.\n");
+    return INVALID;
+  }
+  return VALID;
 }
 
-int handleANR(char *buffer, struct User *user){
-	char *token;
-	int count = 0;
-	int size = strlen(buffer);
+int handleANR(char *buffer, struct User *user) {
+  char *token;
+  int count = 0;
+  int size = strlen(buffer);
 
-	token = strtok(buffer, " ");
-	count += strlen(token);
+  token = strtok(buffer, " ");
+  count += strlen(token);
 
-	if (strcmp(token, SUBMIT_ANSWER_RESPONSE) == 0){
-		token = strtok(NULL, " ");
-		count += strlen(token);
+  if (strcmp(token, SUBMIT_ANSWER_RESPONSE) == 0) {
+    token = strtok(NULL, " ");
+    count += strlen(token);
 
-		if(strcmp(token, OK) == 0){
-			printf("Answer to question '%s' submited successfully.\n", user->selected_question);
-		}
-		else if(strcmp(token, NOK) == 0){
-			printf("Failed to submit answer to question '%s'.\n", user->selected_question);
-		}
-		else if(strcmp(token, FULL)){
-			printf("Couldn't submit answer. Question '%s' can't accept more answers for now.\n",  user->selected_question);
-		}
-		else{
-			printf("Error receiving answer from server.\n");
-			return ERR;
-		}
-		
-		if((size - count) > 1){
-			printf("Error receiving answer from server.\n");
-			return INVALID;
-		}
-	}
-	else{
-		printf("Error receiving answer from server.\n");
-		return INVALID;
-	}
-	return VALID;
+    if (strcmp(token, OK) == 0) {
+      printf("Answer to question '%s' submited successfully.\n",
+             user->selected_question);
+    } else if (strcmp(token, NOK) == 0) {
+      printf("Failed to submit answer to question '%s'.\n",
+             user->selected_question);
+    } else if (strcmp(token, FULL)) {
+      printf("Couldn't submit answer. Question '%s' can't accept more answers "
+             "for now.\n",
+             user->selected_question);
+    } else {
+      printf("Error receiving answer from server.\n");
+      return ERR;
+    }
+
+    if ((size - count) > 1) {
+      printf("Error receiving answer from server.\n");
+      return INVALID;
+    }
+  } else {
+    printf("Error receiving answer from server.\n");
+    return INVALID;
+  }
+  return VALID;
 }

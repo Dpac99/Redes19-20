@@ -1,7 +1,7 @@
 #include "../others/consts.h"
 #include "../others/helpers.h"
 
-/*int parseGetQuestion(char *info, char *topic, char *question) {
+int parseGetQuestion(char *info, char *topic, char *question) {
   int infoSize = strlen(info);
   int i, j = 0;
   int space = 0;
@@ -23,492 +23,513 @@
   }
 
   return 0;
-}*/
+}
 
-/*int handleGetQuestion(char *info, char *dest, long destsize) {
-  char topic[16], question[16], path[64], filename[128], *data, ext[4];
-  char answers[100][32];
+int handleGetQuestion(int fd) {
+  char buffer[BUFFER_SIZE];
+  char topic[16], question[16], ext[4];
+  char resp[BUFFER_SIZE];
+  char path[64];
+  char filename[128];
+  int err;
+  char eol[] = {"\n\0\0"};
+  char errS[5];
+  int uid, size, qimg;
+  int nread = 0, nleft, chunk;
+  DIR *dir;
   FILE *f;
   struct dirent *ent;
-  DIR *dir;
-  int uid, err, qIMG, i = 0, limit;
-  struct stat st;
-  off_t size;
+  fd_set mask;
+  struct timeval timeout;
+  timeout.tv_sec = 0;
+  timeout.tv_usec = 0;
+  char answers[100][16];
 
-  sprintf(dest, "%s ", GET_QUESTION_RESPONSE);
+  sprintf(errS, "%s\n", ERROR);
+
+  FD_ZERO(&mask);
+  FD_SET(fd, &mask);
+  memset(buffer, 0, BUFFER_SIZE);
+
+  // Read info from socket
+  while (select(fd + 1, &mask, NULL, NULL, &timeout)) {
+    FD_ZERO(&mask);
+    FD_SET(fd, &mask);
+    nread += read(fd, buffer + nread, BUFFER_SIZE - nread);
+    if (nread == -1) {
+      writeTCP(fd, errS, 4);
+      return -1;
+      ;
+    }
+  }
+
+  printf("%s", buffer);
+
+  printf("\n\tSENT: ");
+
+  char s[8];
+  err = sprintf(s, "%s ", GET_QUESTION_RESPONSE);
+  if (err < 0) {
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
+  }
+
+  err = writeTCP(fd, s, 4);
+  if (err < 1) {
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
+  }
 
   // Parse info
+  err = parseGetQuestion(buffer, topic, question);
+  if (err != 0) {
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
+  }
 
-  err = parseGetQuestion(info, topic, question);
-  if (err > 0) {
-    sprintf(dest + strlen(dest), "%s\n", ERROR);
+  // path = TOPICS/{topic}/{question}
+  err = sprintf(path, "%s/%s/%s", TOPICS, topic, question);
+  if (err < 0) {
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
+  }
+
+  err = fileExists(path);
+  if (err == 0) { // Check if path exists
+    writeTCP(fd, "EOF\n", 4);
     return 0;
+  } else if (err == -1) {
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
   }
 
-  // Build path to topic/question/data dir
-  err = sprintf(path, "%s/%s/%s/%s", TOPICS, topic, question, DATA);
+  // File that contains uid of the question submitter
+  err = sprintf(filename, "%s/%s/%s", path, DATA, USER);
   if (err < 0) {
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
   }
 
-  if (opendir(path) == NULL &&
-      errno == ENOENT) { // Check if topic/question/data exists. If not, return
-                         // QGR EOF
-    sprintf(dest + strlen(dest), "%s\n", END_OF_FILE);
+  f = fopen(filename, "r");
+  if (f == NULL) {
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
   }
 
-  // Read uid of question
-  err = sprintf(filename, "%s/%s", path, USER);
+  err = fscanf(f, "%d", &uid);
   if (err < 0) {
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
   }
 
-  if (access(filename, F_OK) == 0) {
+  fclose(f);
+
+  // Get data size
+  memset(filename, 0, 128);
+  err = sprintf(filename, "%s/%s/%s", path, DATA, QDATA);
+  if (err < 0) {
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
+  }
+
+  size = fileExists(filename);
+  if (size <= 0) {
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
+  }
+
+  memset(resp, 0, BUFFER_SIZE);
+  err = sprintf(resp, "%d %d ", uid, size);
+  if (err < 0) {
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
+  }
+
+  err = writeTCP(fd, resp, strlen(resp));
+  if (err < 0) {
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
+  }
+
+  f = fopen(filename, "r");
+  if (f == NULL) {
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
+  }
+
+  nleft = size;
+  while (nleft > 0) {
+    memset(buffer, 0, BUFFER_SIZE);
+    chunk = nleft < BUFFER_SIZE ? nleft : BUFFER_SIZE;
+    err = fread(buffer, chunk, sizeof(char), f);
+    if (err != chunk && feof(f)) {
+      writeTCP(fd, errS, 4);
+      return -1;
+      ;
+    }
+    err = writeTCP(fd, buffer, chunk);
+    if (err < 0) {
+      writeTCP(fd, errS, 4);
+      return -1;
+      ;
+    }
+    nleft -= chunk;
+  }
+
+  fclose(f);
+
+  // Check for images
+
+  memset(filename, 0, 128);
+  err = sprintf(filename, "%s/%s/%s", path, DATA, IMG_DATA);
+  if (err < 0) {
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
+  }
+
+  f = fopen(filename, "r");
+  if (f == NULL) {
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
+  }
+
+  // read qimg and ext
+  err = fscanf(f, "%d %s", &qimg, ext);
+  if (err < 0) {
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
+  }
+
+  if (qimg == 0) {
+    char s[4];
+    err = sprintf(s, " %d", qimg);
+    if (err < 0) {
+      writeTCP(fd, errS, 4);
+      return -1;
+      ;
+    }
+    err = writeTCP(fd, s, 3);
+    if (err < 0) {
+      writeTCP(fd, errS, 4);
+      return -1;
+      ;
+    }
+  } else { // If qimg == 1
+    memset(filename, 0, 128);
+    err = sprintf(filename, "%s/%s/%s.%s", path, DATA, IMG, ext);
+    if (err < 0) {
+      writeTCP(fd, errS, 4);
+      return -1;
+      ;
+    }
+
+    // get size of data
+    size = fileExists(filename);
+    if (size < 1) {
+      writeTCP(fd, errS, 4);
+      return -1;
+      ;
+    }
+
+    // write qimg, ext and size
+    char s[16];
+    err = sprintf(s, " %d %s %d ", qimg, ext, size);
+    if (err < 0) {
+      writeTCP(fd, errS, 4);
+      return -1;
+      ;
+    }
+
+    err = writeTCP(fd, s, strlen(s));
+    if (err < 0) {
+      writeTCP(fd, errS, 4);
+      return -1;
+      ;
+    }
+
+    // write imgdata
     f = fopen(filename, "r");
     if (f == NULL) {
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
+      writeTCP(fd, errS, 4);
+      return -1;
+      ;
+    }
+
+    nleft = size;
+    while (nleft > 0) {
+      memset(buffer, 0, BUFFER_SIZE);
+      chunk = nleft < BUFFER_SIZE ? nleft : BUFFER_SIZE;
+      err = fread(buffer, chunk, sizeof(char), f);
+      if (err != chunk && feof(f)) {
+        writeTCP(fd, errS, 4);
+        return -1;
+        ;
+      }
+      err = writeTCP(fd, buffer, chunk);
+      if (err < 0) {
+        writeTCP(fd, errS, 4);
+        return -1;
+        ;
+      }
+      nleft -= chunk;
+    }
+
+    fclose(f);
+  }
+
+  // Get N of answers, aka, the answer number of the last
+
+  int i = 0;
+  int N;
+  dir = opendir(path);
+  if (dir != NULL) {
+    while ((ent = readdir(dir)) != NULL) {
+      if ((strcmp(ent->d_name, ".") * strcmp(ent->d_name, "..") *
+           strcmp(ent->d_name, DATA)) != 0) {
+        strcpy(answers[i++], ent->d_name);
+      }
+    }
+  }
+
+  if (i > 10) {
+    N = 10;
+  } else {
+    N = i;
+  }
+
+  memset(s, 0, 8);
+  err = N > 0 ? sprintf(s, " %d ", N) : sprintf(s, " %d%s", N, eol);
+  if (err < 0) {
+    writeTCP(fd, errS, 4);
+    return -1;
+    ;
+  }
+
+  err = writeTCP(fd, s, strlen(s));
+  if (err < 0) {
+    writeTCP(fd, errS, 4);
+    return -1;
+  }
+
+  // Get info and data for last 10 answers. Also writes
+  while (N-- > 0) {
+    memset(filename, 0, 128);
+
+    // Get dir name
+    err = sprintf(filename, "%s/%s", path, answers[N]);
+    if (err < 0) {
+      writeTCP(fd, errS, 4);
+      return -1;
+    }
+
+    char AN[3];
+    getAnswerNumber(filename, AN);
+
+    char s[8];
+    memset(s, 0, 8);
+    err = sprintf(s, "%s ", AN);
+    if (err < 0) {
+      writeTCP(fd, errS, 4);
+      return -1;
+    }
+
+    err = writeTCP(fd, s, strlen(s));
+    if (err < 1) {
+      writeTCP(fd, errS, 4);
+      return -1;
+    }
+
+    // Get user id
+    err = sprintf(filename + strlen(filename), "/%s", USER);
+    if (err < 0) {
+      writeTCP(fd, errS, 4);
+      return -1;
+    }
+
+    f = fopen(filename, "r");
+    if (f == NULL) {
+      writeTCP(fd, errS, 4);
+      return -1;
     }
 
     err = fscanf(f, "%d", &uid);
-    if (err == EOF) {
-      fclose(f);
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-    fclose(f);
-  } else {
-
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
-  }
-
-  err = sprintf(dest + strlen(dest), "%d ", uid);
-  if (err < 0) {
-
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
-  }
-
-  // Get question info
-  err = sprintf(filename, "%s/%s", path, QDATA);
-  if (err < 0) {
-
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
-  }
-
-  if (stat(filename, &st) == 0) {
-
-    size = st.st_size;
-
-    data = (char *)malloc(sizeof(char) * (size + 1));
-    if (data == NULL) {
-
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-
-    f = fopen(filename, "r");
-    if (f == NULL) {
-
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-
-    int nread = 0;
-    for (; nread < size; nread++) {
-      data[nread] = fgetc(f);
-    }
-
-    data[nread] = '\0';
-
-    fclose(f);
-
-    // Print question info to response buffer
-    err = sprintf(dest + strlen(dest), "%d %s ", (int)size, data);
     if (err < 0) {
-
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
+      writeTCP(fd, errS, 4);
+      return -1;
     }
-
-    free(data);
-  } else {
-
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
-  }
-
-  // Check if image and extension if yes
-  memset(filename, 0, strlen(filename));
-  err = sprintf(filename, "%s/%s", path, IMG_DATA);
-  if (err < 0) {
-
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
-  }
-
-  if (access(filename, F_OK) == 0) {
-    f = fopen(filename, "r");
-    if (f == NULL) {
-
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-
-    fscanf(f, "%d %s", &qIMG, ext);
 
     fclose(f);
-  } else {
 
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
-  }
-
-  err = sprintf(dest + strlen(dest), "%d ", qIMG);
-  if (err < 0) {
-
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
-  }
-
-  // Get image
-
-  if (qIMG == 1) {
+    // Get dataSize
     memset(filename, 0, 128);
-    err = sprintf(filename, "%s/%s.%s", path, IMG, ext);
+    err = sprintf(filename, "%s/%s/%s", path, answers[N], ANS_DATA);
     if (err < 0) {
-
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
+      writeTCP(fd, errS, 4);
+      return -1;
     }
 
-    if (stat(filename, &st) == 0) {
+    size = fileExists(filename);
+    if (size < 1) {
+      writeTCP(fd, errS, 4);
+      return -1;
+    }
 
-      size = st.st_size;
+    // Write all info so far
+    memset(resp, 0, BUFFER_SIZE);
+    err = sprintf(resp, "%d %d ", uid, size);
+    if (err < 0) {
+      writeTCP(fd, errS, 4);
+      return -1;
+    }
 
-      data = (char *)malloc(sizeof(char) * (size + 1));
-      if (data == NULL) {
+    err = writeTCP(fd, resp, strlen(resp));
+    if (err < 0) {
+      writeTCP(fd, errS, 4);
+      return -1;
+    }
 
-        memset(dest, 0, destsize);
-        sprintf(dest, "%s\n", ERROR);
-        return 1;
+    // Open, read and send data file
+
+    f = fopen(filename, "r");
+    if (f == NULL) {
+      writeTCP(fd, errS, 4);
+      return -1;
+    }
+
+    nleft = size;
+    while (nleft > 0) {
+      memset(buffer, 0, BUFFER_SIZE);
+      chunk = nleft < BUFFER_SIZE ? nleft : BUFFER_SIZE;
+      err = fread(buffer, chunk, sizeof(char), f);
+      if (err != chunk && feof(f)) {
+        writeTCP(fd, errS, 4);
+        return -1;
+      }
+      err = writeTCP(fd, buffer, chunk);
+      if (err < 0) {
+        writeTCP(fd, errS, 4);
+        return -1;
+      }
+      nleft -= chunk;
+    }
+
+    fclose(f);
+
+    // get image info
+
+    memset(filename, 0, 128);
+    err = sprintf(filename, "%s/%s/%s", path, answers[N], IMG_DATA);
+    if (err < 0) {
+      writeTCP(fd, errS, 4);
+      return -1;
+    }
+
+    f = fopen(filename, "r");
+    if (f == NULL) {
+      writeTCP(fd, errS, 4);
+      return -1;
+    }
+
+    // read qimg and ext
+    err = fscanf(f, "%d %s", &qimg, ext);
+    if (err < 0) {
+      writeTCP(fd, errS, 4);
+      return -1;
+    }
+
+    if (qimg == 0) {
+      char s[8];
+      err = N == 0 ? sprintf(s, " %d ", qimg) : sprintf(s, " %d%s", qimg, eol);
+      if (err < 0) {
+        writeTCP(fd, errS, 4);
+        return -1;
+      }
+      err = writeTCP(fd, s, 4);
+      if (err < 0) {
+        writeTCP(fd, errS, 4);
+        return -1;
+      }
+    } else { // If qimg == 1
+      memset(filename, 0, 128);
+      err = sprintf(filename, "%s/%s/%s.%s", path, answers[N], IMG, ext);
+      if (err < 0) {
+        writeTCP(fd, errS, 4);
+        return -1;
       }
 
+      // get size of data
+      size = fileExists(filename);
+      if (size < 1) {
+        writeTCP(fd, errS, 4);
+        return -1;
+      }
+
+      // write qimg, ext and size
+      char s[16];
+      err = sprintf(s, " %d %s %d ", qimg, ext, size);
+      if (err < 0) {
+        writeTCP(fd, errS, 4);
+        return -1;
+      }
+
+      err = writeTCP(fd, s, strlen(s));
+      if (err < 0) {
+        writeTCP(fd, errS, 4);
+        return -1;
+      }
+
+      // write imgdata
       f = fopen(filename, "r");
       if (f == NULL) {
-
-        memset(dest, 0, destsize);
-        sprintf(dest, "%s\n", ERROR);
-        return 1;
+        writeTCP(fd, errS, 4);
+        return -1;
       }
 
-      int s = 0;
-      for (; s < size; s++) {
-        data[s] = fgetc(f);
-      }
-
-      data[s] = '\0';
-
-      fclose(f);
-
-      err = sprintf(dest + strlen(dest), "%s %d %s ", ext, (int)size, data);
-      if (err < 0) {
-
-        memset(dest, 0, destsize);
-        sprintf(dest, "%s\n", ERROR);
-        return 1;
-      }
-
-      free(data);
-    } else {
-
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-  }
-
-  memset(filename, 0, 128);
-  err = sprintf(filename, "%s/%s/%s", TOPICS, topic, question);
-  if (err < 0) {
-
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
-  }
-
-  // Get all answers and get most recent 10
-  if ((dir = opendir(filename)) != NULL) {
-    i = 0;
-    // Read dir
-    while ((ent = readdir(dir)) != NULL) {
-      if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0 &&
-          strcmp(ent->d_name, DATA) != 0) {
-        strcpy(answers[i], ent->d_name);
-        i++;
-      }
-    }
-  } else {
-
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
-  }
-
-  // Find N
-
-  if (i > 10) {
-    limit = i - 9;
-    err = sprintf(dest + strlen(dest), "%d", 10);
-  } else {
-    err = sprintf(dest + strlen(dest), "%d", i);
-  }
-  if (err < 0) {
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
-  }
-
-  // Last 10 (all answers are filed as answer_XX, so the last will be the most
-  // recent)
-  for (; i > limit; i--) {
-    memset(filename, 0, 128);
-    err = sprintf(filename, "%s/%s/%s/%s", TOPICS, topic, question,
-                  answers[i - 1]);
-    if (err < 0) {
-
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-
-    char a0 = answers[i - 1][strlen("ANSWER_")];
-    char a1 = answers[i - 1][strlen("ANSWER_") + 1];
-
-    err = sprintf(dest + strlen(dest), " %c%c ", a0, a1);
-    if (err < 0) {
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-
-    int aUID;
-
-    char answer[BUFFER_SIZE];
-
-    memset(answer, 0, BUFFER_SIZE);
-    err = sprintf(answer, "%s/%s", filename, USER);
-    if (err < 0) {
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-
-    // Read Uid of answer
-    if (access(answer, R_OK) == 0) {
-
-      f = fopen(answer, "r");
-      if (f == NULL) {
-
-        memset(dest, 0, destsize);
-        sprintf(dest, "%s\n", ERROR);
-        return 1;
-      }
-
-      err = fscanf(f, "%d", &aUID);
-      if (err < 1) {
-        memset(dest, 0, destsize);
-        sprintf(dest, "%s\n", ERROR);
-        return 1;
-      }
-      fclose(f);
-
-      // Print uid to dest
-      err = sprintf(dest + strlen(dest), "%d ", aUID);
-      if (err < 0) {
-        memset(dest, 0, destsize);
-        sprintf(dest, "%s\n", ERROR);
-        return 1;
-      }
-    } else {
-
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-
-    memset(answer, 0, BUFFER_SIZE);
-    err = sprintf(answer, "%s/%s", filename, ANS_DATA);
-    if (err < 0) {
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-
-    stat(answer, &st);
-
-    size = st.st_size;
-
-    data = (char *)malloc(sizeof(char) * (size + 1));
-    if (data == NULL) {
-
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-
-    if (access(answer, R_OK) == 0) {
-
-      f = fopen(answer, "r");
-      if (f == NULL) {
-
-        memset(dest, 0, destsize);
-        sprintf(dest, "%s\n", ERROR);
-        return 1;
-      }
-
-      int c, a = 0;
-      while ((c = getc(f)) != EOF) {
-        data[a++] = c;
-      }
-
-      fclose(f);
-
-      // Print answer data to dest
-      err = sprintf(dest + strlen(dest), "%d %s ", (int)size, data);
-      if (err < 0) {
-
-        memset(dest, 0, destsize);
-        sprintf(dest, "%s\n", ERROR);
-        return 1;
-      }
-
-      free(data);
-    } else {
-
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-
-    // Check if image and extension if yes
-    memset(answer, 0, BUFFER_SIZE);
-    err = sprintf(answer, "%s/%s", filename, IMG_DATA);
-    if (err < 0) {
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-    if (access(answer, R_OK) == 0) {
-      f = fopen(answer, "r");
-      if (f == NULL) {
-
-        memset(dest, 0, destsize);
-        sprintf(dest, "%s\n", ERROR);
-        return 1;
-      }
-
-      memset(ext, 0, 4);
-      fscanf(f, "%d %s", &qIMG, ext);
-      fclose(f);
-    } else {
-
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-
-    err = sprintf(dest + strlen(dest), "%d", qIMG);
-    if (err < 0) {
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
-
-    // Get image
-    if (qIMG == 1) {
-      memset(answer, 0, BUFFER_SIZE);
-      err = sprintf(answer, "%s/%s.%s", filename, IMG, ext);
-      if (err < 0) {
-        memset(dest, 0, destsize);
-        sprintf(dest, "%s\n", ERROR);
-        return 1;
-      }
-
-      if (stat(answer, &st) == 0) {
-
-        size = st.st_size;
-
-        data = (char *)malloc(sizeof(char) * (size + 1));
-        if (data == NULL) {
-
-          memset(dest, 0, destsize);
-          sprintf(dest, "%s\n", ERROR);
-          return 1;
+      nleft = size;
+      while (nleft > 0) {
+        memset(buffer, 0, BUFFER_SIZE);
+        chunk = nleft < BUFFER_SIZE ? nleft : BUFFER_SIZE;
+        err = fread(buffer, chunk, sizeof(char), f);
+        if (err != chunk && feof(f)) {
+          writeTCP(fd, errS, 4);
+          return -1;
         }
-
-        f = fopen(answer, "r");
-        if (f == NULL) {
-
-          memset(dest, 0, destsize);
-          sprintf(dest, "%s\n", ERROR);
-          return 1;
-        }
-
-        int nread = 0;
-        for (; nread < size; nread++) {
-          data[nread] = fgetc(f);
-        }
-
-        data[nread] = '\0';
-
-        fclose(f);
-
-        // Print image
-        err = sprintf(dest + strlen(dest), " %s %d %s", ext, (int)size, data);
+        err = writeTCP(fd, buffer, chunk);
         if (err < 0) {
-
-          memset(dest, 0, destsize);
-          memset(filename, 0, 128);
-          sprintf(dest, "%s\n", ERROR);
-          return 1;
+          writeTCP(fd, errS, 4);
+          return -1;
         }
+        nleft -= chunk;
+      }
 
-        free(data);
-      } else {
+      fclose(f);
 
-        memset(dest, 0, destsize);
-        sprintf(dest, "%s\n", ERROR);
-        return 1;
+      if (N == 0) {
+        writeTCP(fd, eol, 1);
       }
     }
   }
-  sprintf(dest + strlen(dest), "\n");
-  return 0;
-}*/
 
-int parseSubmitQuestion(char *buffer, int *uid, char *topic, char *question,
-                        int *size) {
+  return 0;
+}
+
+int parseSubmitQuestion(char *buffer, int *uid, char *topic, char *question,int *size) {
 
   int i = 0, t = 0, q = 0;
 
@@ -551,6 +572,7 @@ int parseSubmitQuestion(char *buffer, int *uid, char *topic, char *question,
   if (sizeOfNumber(*uid) != 5 || strlen(topic) == 0 || strlen(question) == 0 ||
       sizeOfNumber(*size) > 10) {
     return -1;
+    ;
   }
 
   return i;
@@ -565,6 +587,7 @@ int parseSubmitQuestionImage(char *buffer, char *ext, int *size) {
   }
   if (buffer[3 + i++] != ' ') {
     return -1;
+    ;
   }
 
   while (buffer[3 + i] != ' ') {
@@ -583,6 +606,7 @@ int handleSubmitQuestion(int fd) {
   int nread, nleft, nproc, err, nprocimg, nleftimg, ndata;
   char response[16];
   DIR *dir;
+  struct dirent *ent;
   FILE *f;
   fd_set mask;
   struct timeval timeout;
@@ -593,6 +617,7 @@ int handleSubmitQuestion(int fd) {
   FD_SET(fd, &mask);
 
   sprintf(response, "%s ", SUBMIT_QUESTION_RESPONSE);
+  memset(buffer,0, BUFFER_SIZE);
 
   nread = read(fd, buffer,
                39); // 4 spaces + max_topic + max_question + max_size + uid_size
@@ -601,18 +626,41 @@ int handleSubmitQuestion(int fd) {
 
   nproc = parseSubmitQuestion(buffer, &uid, topic, question, &size);
   if (nproc < 0) {
+    memset(path, 0, 64);
+    sprintf(path, "%s/%s/%s", TOPICS,topic,question);
     sprintf(response + strlen(response), "%s\n", NOK);
     write(fd, response, strlen(response));
     return 0;
   }
 
-  // Check if everything exists
-  err = sprintf(path, "%s/%s/%s", TOPICS, topic, question);
+  // Check number of questions
+  err = sprintf(path, "%s/%s", TOPICS, topic);
   if (err < 0) {
-    memset(response, 0, 16);
-    printf("\tERR3\n");
-    sprintf(response, "%s\n", ERROR);
-    write(fd, response, strlen(response));
+    writeTCP(fd, "ERR\n", 4);
+    return -1;
+  }
+
+  int c = 0;
+  dir = opendir(path);
+  if (dir != NULL) {
+    while ((ent = readdir(dir)) != NULL) {
+      if ((strcmp(ent->d_name, ".") * strcmp(ent->d_name, "..") *
+           strcmp(ent->d_name, USER)) != 0) {
+        c++;
+      }
+    }
+  }
+
+  if (c == 99) {
+    sprintf(response + strlen(response), "%s\n", FULL);
+    writeTCP(fd, response, strlen(response));
+    return 0;
+  }
+
+  // Check if everything exists
+  err = sprintf(path + strlen(path), "/%s", question);
+  if (err < 0) {
+    writeTCP(fd, "ERR\n", 4);
     return -1;
   }
 
@@ -622,19 +670,13 @@ int handleSubmitQuestion(int fd) {
     write(fd, response, strlen(response));
     return 0;
   } else if (errno != ENOENT) {
-    memset(response, 0, 16);
-    printf("\tERR4\n");
-    sprintf(response, "%s\n", ERROR);
-    write(fd, response, strlen(response));
+    writeTCP(fd, "ERR\n", 4);
     return -1;
   }
 
   err = mkdir(path, 0700); // make question dir
   if (err < 0) {
-    memset(response, 0, 16);
-    printf("\tERR5\n");
-    sprintf(response, "%s\n", ERROR);
-    write(fd, response, strlen(response));
+    writeTCP(fd, "ERR\n", 4);
     return -1;
   }
 
@@ -642,19 +684,13 @@ int handleSubmitQuestion(int fd) {
 
   err = sprintf(path + strlen(path), "/%s", DATA);
   if (err < 0) {
-    memset(response, 0, 16);
-    printf("\tERR6\n");
-    sprintf(response, "%s\n", ERROR);
-    write(fd, response, strlen(response));
+    writeTCP(fd, "ERR\n", 4);
     return -1;
   }
 
   err = mkdir(path, 0700); // make question dir
   if (err < 0) {
-    memset(response, 0, 16);
-    printf("\tERR7\n");
-    sprintf(response, "%s\n", ERROR);
-    write(fd, response, strlen(response));
+    writeTCP(fd, "ERR\n", 4);
     return -1;
   }
 
@@ -663,30 +699,21 @@ int handleSubmitQuestion(int fd) {
   err = sprintf(filename, "%s/%s", path, USER);
   if (err < 0) {
     deleteDir(path);
-    memset(response, 0, 16);
-    printf("\tERR8\n");
-    sprintf(response, "%s\n", ERROR);
-    write(fd, response, strlen(response));
+    writeTCP(fd, "ERR\n", 4);
     return -1;
   }
 
   f = fopen(filename, "w");
   if (f == NULL) {
     deleteDir(path);
-    memset(response, 0, 16);
-    printf("\tERR9\n");
-    sprintf(response, "%s\n", ERROR);
-    write(fd, response, strlen(response));
+    writeTCP(fd, "ERR\n", 4);
     return -1;
   }
 
   err = fprintf(f, "%d", uid);
   if (err < 0) {
     deleteDir(path);
-    memset(response, 0, 16);
-    printf("\tERR10\n");
-    sprintf(response, "%s\n", ERROR);
-    write(fd, response, strlen(response));
+    writeTCP(fd, "ERR\n", 4);
     return -1;
   }
 
@@ -698,20 +725,14 @@ int handleSubmitQuestion(int fd) {
   err = sprintf(filename, "%s/%s", path, QDATA);
   if (err < 0) {
     deleteDir(path);
-    memset(response, 0, 16);
-    printf("\tERR11\n");
-    sprintf(response, "%s\n", ERROR);
-    write(fd, response, strlen(response));
+    writeTCP(fd, "ERR\n", 4);
     return -1;
   }
 
-  f = fopen(filename, "w");
+  f = fopen(filename, "wb");
   if (f == NULL) {
     deleteDir(path);
-    memset(response, 0, 16);
-    printf("\tERR12\n");
-    sprintf(response, "%s\n", ERROR);
-    write(fd, response, strlen(response));
+    writeTCP(fd, "ERR\n", 4);
     return -1;
   }
 
@@ -732,8 +753,10 @@ int handleSubmitQuestion(int fd) {
                                                    // until nleft is smaller
       int n = read(fd, buffer, chunk);
       naux -= n;
-      for (int l = 0; l < n; l++) {
-        fputc(buffer[l], f);
+      int nsaved = fwrite(buffer, sizeof(char), n, f);
+      if(nsaved != n){
+        writeTCP(fd, "ERR\n", 4);
+        return 1;
       }
       printf("%s", buffer);
       memset(buffer, 0, BUFFER_SIZE);
@@ -758,6 +781,8 @@ int handleSubmitQuestion(int fd) {
   }
 
   if (buffer[0] != ' ') {
+    memset(path, 0, 64);
+    sprintf(path, "%s/%s/%s", TOPICS,topic,question);
     deleteDir(path);
     sprintf(response + strlen(response), "%s\n", NOK);
     write(fd, response, strlen(response));
@@ -769,37 +794,32 @@ int handleSubmitQuestion(int fd) {
   err = sprintf(filename, "%s/%s", path, IMG_DATA);
   if (err < 0) {
     deleteDir(path);
-    memset(response, 0, 16);
-    printf("\tERR13\n");
-    sprintf(response, "%s\n", ERROR);
-    write(fd, response, strlen(response));
+    writeTCP(fd, "ERR\n", 4);
     return -1;
   }
 
   f = fopen(filename, "w");
   if (f == NULL) {
     deleteDir(path);
-    memset(response, 0, 16);
-    printf("\tERR14\n");
-    sprintf(response, "%s\n", ERROR);
-    write(fd, response, strlen(response));
+    writeTCP(fd, "ERR\n", 4);
     return -1;
   }
 
   qimg = buffer[1] - '0';
 
-  fputc(qimg, f);
-  fputc(' ', f);
+  printf(" %d ", qimg);
 
   if (qimg == 0) {
     if (buffer[2] != '\n') {
+      memset(path, 0, 64);
+      sprintf(path, "%s/%s/%s", TOPICS,topic,question);
       deleteDir(path);
       sprintf(response + strlen(response), "%s\n", NOK);
       write(fd, response, strlen(response));
       return 0;
     }
 
-    fprintf(f, "%s", "nil"); // nil is a placeholder
+    fprintf(f, "%d %s", qimg, "nil"); // nil is a placeholder
     fclose(f);
   } else if (qimg == 1) {
     int nimg = ndata;
@@ -841,11 +861,7 @@ int handleSubmitQuestion(int fd) {
 
     // Fill IMG_DATA.txt file
 
-    fputc(qimg + '0', f);
-    fputc(' ', f);
-    for (int k = 0; k < 3; k++) {
-      fputc(ext[k], f);
-    }
+    fprintf(f, "%d %s", qimg, ext);
     fclose(f);
 
     // Open IMG.ext file
@@ -854,20 +870,22 @@ int handleSubmitQuestion(int fd) {
     if (err < 0) {
       deleteDir(path);
       memset(response, 0, 16);
-      printf("\tERR15\n");
+
       sprintf(response, "%s\n", ERROR);
       write(fd, response, strlen(response));
       return -1;
+      ;
     }
 
-    f = fopen(filename, "w");
+    f = fopen(filename, "wb");
     if (f == NULL) {
       deleteDir(path);
       memset(response, 0, 16);
-      printf("\tERR16\n");
+
       sprintf(response, "%s\n", ERROR);
       write(fd, response, strlen(response));
       return -1;
+      ;
     }
 
     // Read image data
@@ -881,7 +899,7 @@ int handleSubmitQuestion(int fd) {
         fputc(buffer[nprocimg + i], f);
       }
 
-      int naux = ndataimg;
+      int naux = ndataimg+1;
       int chunk = 0;
       while (naux > 0) {
         memset(buffer, 0, BUFFER_SIZE);
@@ -890,14 +908,19 @@ int handleSubmitQuestion(int fd) {
                                                   // until nleft is smaller
         int n = read(fd, buffer, chunk);
         naux -= n;
-        for (int l = 0; l < n; l++) {
-          fputc(buffer[l], f);
+        err = fwrite(buffer, sizeof(char), n, f);
+        if (err != n) {
+          writeTCP(fd, "ERR\n", 4);
+          return -1;
         }
         printf("%s", buffer);
       }
 
-      if (buffer[chunk - 1] != '\n') {
+      if (buffer[chunk-1] != '\n') {
+        memset(path, 0, 64);
+        sprintf(path, "%s/%s/%s", TOPICS,topic,question);
         deleteDir(path);
+        fclose(f);
         sprintf(response + strlen(response), "%s\n", NOK);
         write(fd, response, strlen(response));
         return 0;
@@ -914,276 +937,330 @@ int handleSubmitQuestion(int fd) {
   return 0;
 }
 
-int parseSubmitAnswer(char *info, int *id, char *topic, char *question,
-                      int *size, char **data, int *qIMG, char *ext, int *iSize,
-                      char **iData) {
-
-  int infoSize = strlen(info);
-  int i = 0, total = 0;
-  char rest[BUFFER_SIZE];
-
-  char *token = strtok(info, " ");
-  while (i < 4) {
-    switch (i) {
-    case 0:
-      *id = atoi(token);
-      break;
-    case 1:
-      strcpy(topic, token);
-      break;
-    case 2:
-      strcpy(question, token);
-      break;
-    case 3:
-      *size = atoi(token);
-      break;
-    }
-    i++;
-    if (i < 4)
-      token = strtok(NULL, " ");
-  }
-
-  *data = (char *)malloc((*size + 1) * sizeof(char));
-  if (*data == NULL) {
-    return 1;
-  }
-
-  total += strlen(topic) + strlen(question) + sizeOfNumber(*id) +
-           sizeOfNumber(*size) + 4;
-
-  int v = 0;
-  for (; v < *size; v++) {
-    (*data)[v] = info[total + v];
-  }
-
-  (*data)[v] = '\0';
-  total += strlen(*data) + 1;
-
-  *qIMG = info[total] - '0';
-
-  total += sizeOfNumber(*qIMG) + 1;
-  if (*qIMG == 1) {
-    for (int j = 0; total + j < infoSize; j++) {
-      rest[j] = info[total + j];
-    }
-
-    token = strtok(rest, " ");
-    strcpy(ext, token);
-    token = strtok(NULL, " ");
-    *iSize = atoi(token);
-
-    int subtotal = strlen(ext) + sizeOfNumber(*iSize) + 2;
-    total += subtotal;
-
-    *iData = (char *)malloc((*iSize + 1) * sizeof(char));
-    if (*iData == NULL) {
-      return 1;
-    }
-
-    int k;
-    for (k = 0; k < *iSize; k++) {
-      (*iData)[k] = rest[subtotal + k];
-    }
-    (*iData)[k] = '\0';
-
-    total += strlen(*iData);
-  }
-
-  total++;
-
-  if (total != infoSize) {
-    return 1;
-  }
-
-  if (*qIMG != 0 && *qIMG != 1) {
-    return 1;
-  }
-
-  return 0;
-}
-
-int handleSubmitAnswer(char *info, char *dest, long destsize) {
-
-  char topic[16], question[16], *data, ext[4], *idata;
-  char path[BUFFER_SIZE], filename[2 * BUFFER_SIZE];
-  int id, size, qIMG, iSize, err, fileN = 0;
-  FILE *f;
-  DIR *d;
+int handleSubmitAnswer(int fd) {
+  char buffer[BUFFER_SIZE];
+  int uid = 0, size = 0, qimg, isize = 0;
+  char topic[16], question[16], ext[4];
+  char path[64], filename[128];
+  int nread, nleft, nproc, err, nprocimg, nleftimg, ndata;
+  char response[16];
+  DIR *dir;
   struct dirent *ent;
+  FILE *f;
+  fd_set mask;
+  struct timeval timeout;
+  timeout.tv_sec = 0;
+  timeout.tv_usec = 0;
 
-  memset(dest, 0, destsize);
-  err = sprintf(dest, "%s ", SUBMIT_ANSWER_RESPONSE);
-  if (err < 0) {
-    return 1;
-  }
+  FD_ZERO(&mask);
+  FD_SET(fd, &mask);
 
-  err = parseSubmitAnswer(info, &id, topic, question, &size, &data, &qIMG, ext,
-                          &iSize, &idata);
-  if (err > 0) {
-    sprintf(dest + strlen(dest), "%s\n", END_OF_FILE);
+  sprintf(response, "%s ", SUBMIT_ANSWER_RESPONSE);
+
+  nread = read(fd, buffer,
+               39); // 4 spaces + max_topic + max_question + max_size + uid_size
+
+  printf("%s", buffer);
+
+  nproc = parseSubmitQuestion(buffer, &uid, topic, question, &size);
+  if (nproc < 0) {
+    sprintf(response + strlen(response), "%s\n", NOK);
+    write(fd, response, strlen(response));
     return 0;
   }
 
-  // Info parsed correctly, procede to build data
-
-  err = sprintf(path, "%s/%s/%s", TOPICS, topic,
-                question); // Topics/topic_name/question
+  // Check number of answers
+  err = sprintf(path, "%s/%s/%s", TOPICS, topic, question);
   if (err < 0) {
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
+    writeTCP(fd, "ERR\n", 4);
+    return -1;
   }
 
-  if ((d = opendir(path)) == NULL) { // Check if topic/question dir exists
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
-  } else {
-    while ((ent = readdir(d)) != NULL) {
-      fileN++;
+  int c = 0;
+  dir = opendir(path);
+  if (dir != NULL) {
+    while ((ent = readdir(dir)) != NULL) {
+      if ((strcmp(ent->d_name, ".") * strcmp(ent->d_name, "..") *
+           strcmp(ent->d_name, DATA)) != 0) {
+        c++;
+      }
     }
   }
-  if (fileN >
-      101) { // Answers 01 to 99 + . + .. + data = 102. Dir is full if fileN
-             // == 102 or >101
-    strcat(dest, FULL);
+
+  if (c == 99) {
+    sprintf(response + strlen(response), "%s\n", FULL);
+    writeTCP(fd, response, strlen(response));
     return 0;
   }
 
-  err = fileN - 2 < 10 ? sprintf(path + strlen(path), "/ANSWER_0%d", fileN - 2)
-                       : sprintf(path + strlen(path), "/ANSWER_%d",
-                                 fileN - 2); // Build path for answer dir
-  if (err < 0) {
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
-  }
-
-  if (opendir(path)) { // Check if answer already exists
-    memset(dest, 0, destsize);
-    strcpy(dest, SUBMIT_QUESTION_RESPONSE);
-    strcat(dest, DUP);
-    return 0;
-  } else if (errno == ENOENT) {
-    err = mkdir(path, 0700);
-    if (err < 0) {
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
-    }
+  char AN[4];
+  if (c < 9) {
+    sprintf(AN, "0%d", c + 1);
   } else {
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
+    sprintf(AN, "%d", c + 1);
   }
 
-  err = sprintf(filename, "%s/%s", path, USER); // Make user id file and fill it
+  // Check if everything exists
+  err = sprintf(path + strlen(path), "/%s_%s", question, AN);
   if (err < 0) {
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
+    writeTCP(fd, "ERR\n", 4);
+    return -1;
+  }
+
+  dir = opendir(path);
+  if (dir != NULL) {
+    sprintf(response + strlen(response), "%s\n", DUP);
+    write(fd, response, strlen(response));
+    return 0;
+  } else if (errno != ENOENT) {
+    writeTCP(fd, "ERR\n", 4);
+    return -1;
+  }
+
+  err = mkdir(path, 0700); // make answer dir
+  if (err < 0) {
+    writeTCP(fd, "ERR\n", 4);
+    return -1;
+  }
+
+  // make answer_uid file
+
+  err = sprintf(filename, "%s/%s", path, USER);
+  if (err < 0) {
+    deleteDir(path);
+    writeTCP(fd, "ERR\n", 4);
+    return -1;
   }
 
   f = fopen(filename, "w");
   if (f == NULL) {
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
+    deleteDir(path);
+    writeTCP(fd, "ERR\n", 4);
+    return -1;
   }
 
-  err = fprintf(f, "%d", id);
+  err = fprintf(f, "%d", uid);
   if (err < 0) {
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
+    deleteDir(path);
+    writeTCP(fd, "ERR\n", 4);
+    return -1;
   }
 
   fclose(f);
 
-  memset(filename, 0, BUFFER_SIZE); // Make answer data file and fill it
+  // make data file, to be filled
+
+  memset(filename, 0, 128);
   err = sprintf(filename, "%s/%s", path, ANS_DATA);
   if (err < 0) {
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
+    deleteDir(path);
+    writeTCP(fd, "ERR\n", 4);
+    return -1;
   }
 
-  f = fopen(filename, "w");
+  f = fopen(filename, "wb");
   if (f == NULL) {
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
+    deleteDir(path);
+    writeTCP(fd, "ERR\n", 4);
+    return -1;
   }
 
-  err = fprintf(f, "%s", data);
-  if (err < 0) {
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
-  }
+  // read rest of data
 
-  fclose(f);
-  memset(filename, 0, BUFFER_SIZE); // Make image info file and fill it
-  err = sprintf(filename, "%s/%s", path, IMG_DATA);
-  if (err < 0) {
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
-  }
+  nleft = size - (nread - nproc);
+  int naux = nleft;
 
-  f = fopen(filename, "w");
-  if (f == NULL) {
-    memset(dest, 0, destsize);
-    sprintf(dest, "%s\n", ERROR);
-    return 1;
-  }
-  if (qIMG == 0) {
-    err = fprintf(f, "%d %s", qIMG, "nil");
-    if (err < 0) {
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
+  if (nleft > 0) {
+
+    for (int k = nproc; k < nread; k++) {
+      fputc(buffer[k], f);
+    }
+    memset(buffer, 0, BUFFER_SIZE);
+    while (naux > 0) {
+      int chunk =
+          naux < BUFFER_SIZE ? naux : BUFFER_SIZE; // read in BUFFER_SIZE chunks
+                                                   // until nleft is smaller
+      int n = read(fd, buffer, chunk);
+      naux -= n;
+      int nsaved = fwrite(buffer, sizeof(char), n, f);
+      if(nsaved != n){
+        writeTCP(fd, "ERR\n", 4);
+        return 1;
+      }
+      printf("%s", buffer);
+      memset(buffer, 0, BUFFER_SIZE);
     }
   } else {
-    err = fprintf(f, "%d %s", qIMG, ext);
-    if (err < 0) {
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
+    for (int l = 0; l < size; l++) {
+      fputc(buffer[nproc + l], f);
     }
   }
 
   fclose(f);
 
-  if (qIMG == 1) {
-    memset(filename, 0, BUFFER_SIZE); // Make image data file and fill it
+  if (nleft > -3) { // If we havent already read qimg
+    memset(buffer, 0, BUFFER_SIZE);
+    read(fd, buffer, 3); // read qimg
+    ndata = 3;
+    nread = 3;
+  } else {
+    shiftLeft(buffer, nproc + size);
+    // Shift so in both cases buffer=[" ", QIMG," "|| "\n", ...]
+    ndata = nread - nproc - size;
+  }
+
+  if (buffer[0] != ' ') {
+    memset(path, 0, 64);
+    sprintf(path, "%s/%s/%s/%s_%s", TOPICS,topic,question, question, AN);
+    deleteDir(path);
+    sprintf(response + strlen(response), "%s\n", NOK);
+    write(fd, response, strlen(response));
+    return 0;
+  }
+
+  // Open IMG_DATA.txt
+  memset(filename, 0, 128);
+  err = sprintf(filename, "%s/%s", path, IMG_DATA);
+  if (err < 0) {
+    deleteDir(path);
+    writeTCP(fd, "ERR\n", 4);
+    return -1;
+  }
+
+  f = fopen(filename, "w");
+  if (f == NULL) {
+    deleteDir(path);
+    writeTCP(fd, "ERR\n", 4);
+    return -1;
+  }
+
+  qimg = buffer[1] - '0';
+
+  printf(" %d ", qimg);
+
+  if (qimg == 0) {
+    if (buffer[2] != '\n') {
+      memset(path, 0, 64);
+    sprintf(path, "%s/%s/%s/%s_%s", TOPICS,topic,question, question, AN);
+      deleteDir(path);
+      sprintf(response + strlen(response), "%s\n", NOK);
+      write(fd, response, strlen(response));
+      return 0;
+    }
+
+    fprintf(f, "%d %s", qimg, "nil"); // nil is a placeholder
+    fclose(f);
+  } else if (qimg == 1) {
+    int nimg = ndata;
+    // If we read into the img area, this tells us how much
+
+    if (nimg > 0) {
+      if (nimg >= 18) { // means we read " 1 ext size "
+        nprocimg = parseSubmitQuestionImage(buffer, ext, &isize);
+        nleftimg = nimg - nprocimg;
+      } else { // mean we have nothing guaranteed
+        int limit = 18;
+        int nreadimg = nimg;
+        while (nreadimg < limit &&
+               select(fd + 1, &mask, NULL, NULL,
+                      &timeout)) { // Read until max_size is guaranteed or
+                                   // nothing more to read
+          nreadimg += read(fd, buffer + nreadimg, limit - nreadimg);
+          FD_ZERO(&mask);
+          FD_SET(fd, &mask);
+          printf("%s", buffer);
+        }
+
+        nprocimg = parseSubmitQuestionImage(buffer, ext, &isize);
+        nleftimg = nreadimg - nprocimg;
+      }
+    } else {
+      int n = 3;
+      int limit = 18;
+      do { // Read until max_size is guaranteed or nothing more to read
+        n += read(fd, buffer + n, limit - n);
+        FD_ZERO(&mask);
+        FD_SET(fd, &mask);
+        printf("%s", buffer);
+      } while (n < limit && select(fd + 1, &mask, NULL, NULL, &timeout));
+
+      nprocimg = parseSubmitQuestionImage(buffer, ext, &isize);
+      nleftimg = n - nprocimg;
+    }
+
+    // Fill IMG_DATA.txt file
+
+    fprintf(f, "%d %s", qimg, ext);
+    fclose(f);
+
+    // Open IMG.ext file
+    memset(filename, 0, 128);
     err = sprintf(filename, "%s/%s.%s", path, IMG, ext);
     if (err < 0) {
+      deleteDir(path);
+      memset(response, 0, 16);
 
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
+      sprintf(response, "%s\n", ERROR);
+      write(fd, response, strlen(response));
+      return -1;
+      ;
     }
 
-    f = fopen(filename, "w");
+    f = fopen(filename, "wb");
     if (f == NULL) {
+      deleteDir(path);
+      memset(response, 0, 16);
 
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
+      sprintf(response, "%s\n", ERROR);
+      write(fd, response, strlen(response));
+      return -1;
+      ;
     }
 
-    err = fprintf(f, "%s", idata);
-    if (err < 0) {
+    // Read image data
+    int ndataimg = isize - nleftimg;
+    if (ndataimg <= 0) { // We already read all the data
+      for (int i = 0; i < isize; i++) {
+        fputc(buffer[nprocimg + i], f);
+      }
+    } else {
+      for (int i = 0; i < nleftimg; i++) {
+        fputc(buffer[nprocimg + i], f);
+      }
 
-      memset(dest, 0, destsize);
-      sprintf(dest, "%s\n", ERROR);
-      return 1;
+      int naux = N==0? ndataimg + 1: ndataimg;
+      int chunk = 0;
+      while (naux > 0) {
+        memset(buffer, 0, BUFFER_SIZE);
+        chunk = naux < BUFFER_SIZE ? naux
+                                   : BUFFER_SIZE; // read in BUFFER_SIZE chunks
+                                                  // until nleft is smaller
+        int n = read(fd, buffer, chunk);
+        naux -= n;
+        int nsaved = fwrite(buffer, sizeof(char), n, f);
+      if(nsaved != n){
+        writeTCP(fd, "ERR\n", 4);
+        return 1;
+      }
+        printf("%s", buffer);
+      }
+
+      if (N==0 && buffer[chunk - 1] != '\n') {
+        memset(path, 0, 64);
+        sprintf(path, "%s/%s/%s/%s_%s", TOPICS,topic,question, question, AN);
+        deleteDir(path);
+        sprintf(response + strlen(response), "%s\n", NOK);
+        write(fd, response, strlen(response));
+        return 0;
+      }
     }
 
     fclose(f);
   }
 
-  sprintf(dest + strlen(dest), "%s\n", OK);
+  sprintf(response + strlen(response), "%s\n", OK);
+  write(fd, response, strlen(response));
+
+  printf("\n");
   return 0;
 }

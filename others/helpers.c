@@ -81,9 +81,17 @@ int isnumber(char *number) {
   return VALID;
 }
 
-bool fileExists(char *filename) {
-  struct stat buff;
-  return (stat(filename, &buff) == 0);
+// fileExists returns file_size if file exists, 0 if it does not, and -1 in
+// error case
+int fileExists(char *filename) {
+  struct stat st;
+  if (stat(filename, &st) == 0) { // Exists
+    return (int)st.st_size;
+  } else if (errno == ENOENT) {// Stat fails and err = file doesn't exist
+    return 0;
+  } else {  // Stat error
+    return -1;
+  }
 }
 
 int fileSize(char *filename) {
@@ -239,3 +247,27 @@ void deleteDir(const char path[]) {
 //     fclose(fp);
 //   }
 // }
+
+int writeTCP(int fd, char *buffer, int size) {
+  int nread = 0;
+  int n;
+  while (nread < size) {
+    n = write(fd, buffer + nread, size - nread);
+    if (n == -1) {
+      return -1;
+    }
+    nread += n;
+  }
+  printf("%s", buffer);
+  return n;
+}
+
+// getAnswerNumber returns the number of the answer as a string of size 2.
+// Answers are of format {question}_XX
+void getAnswerNumber(char *filename, char *s) {
+  int size = strlen(filename);
+
+  s[0] = filename[size - 2];
+  s[1] = filename[size - 1];
+  s[2] = '\0';
+}
