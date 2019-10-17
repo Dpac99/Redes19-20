@@ -890,7 +890,7 @@ int handleSubmitQuestion(int fd) {
       for (int i = 0; i < nleftimg; i++) {
         fputc(buffer[nprocimg + i], f);
       }
-
+      // TODO: Test huge files
       int naux = ndataimg;
       int chunk = 0;
       while (naux > 0) {
@@ -900,8 +900,10 @@ int handleSubmitQuestion(int fd) {
                                                   // until nleft is smaller
         int n = read(fd, buffer, chunk);
         naux -= n;
-        for (int l = 0; l < n; l++) {
-          fputc(buffer[l], f);
+        err = fwrite(buffer, sizeof(char), n, f);
+        if (err != n) {
+          writeTCP(fd, "ERR\n", 4);
+          return -1;
         }
         printf("%s", buffer);
       }
