@@ -5,7 +5,7 @@
 #include "client_communication.h"
 
 void parseArgs(int argc, char *argv[], char *port, char *server_IP);
-int readCommand(char *buffer);
+int readCommand(char *buffer, int *numSpaces);
 void endClient(char **commandArgs, struct User *user, int udp_fd, char *buffer);
 struct User *initUser();
 struct Submission *initSubmission();
@@ -23,6 +23,7 @@ int main(int argc, char *argv[]) {
   struct Submission *submission;
   char *buffer, **commandArgs, *port, *server_IP, command[COMMAND_SIZE];
   char topic[TOPIC_SIZE], question[QUESTION_SIZE];
+  int numSpaces = 0;
 
   user = initUser();
   submission = initSubmission();
@@ -95,13 +96,13 @@ int main(int argc, char *argv[]) {
 
   printf("Welcome!\n>> ");
   scanf("%s", command);
-  readCommand(buffer);
+  readCommand(buffer, &numSpaces);
 
   // UDP
   while (strcmp(command, "exit") != 0) {
 
     if ((strcmp(command, "register") == 0) || (strcmp(command, "reg") == 0)) {
-      status = registerUser(buffer, user);
+      status = registerUser(buffer, user, numSpaces);
       if (status == VALID) {
         status = communicateUDP(buffer, udp_fd, res, addr);
         if( status == VALID){
@@ -116,7 +117,7 @@ int main(int argc, char *argv[]) {
 
     else if ((strcmp(command, "topic_list") == 0) ||
              (strcmp(command, "tl") == 0)) {
-      status = topicList(buffer, user);
+      status = topicList(buffer, user, numSpaces);
       if (status == VALID) {
 
         status = communicateUDP(buffer, udp_fd, res, addr);
@@ -132,18 +133,18 @@ int main(int argc, char *argv[]) {
     }
 
     else if (strcmp(command, "topic_select") == 0) {
-      topicSelect(buffer, 0, user);
+      topicSelect(buffer, 0, user, numSpaces);
       memset(buffer, 0, BUFFER_SIZE);
     }
 
     else if (strcmp(command, "ts") == 0) {
-      topicSelect(buffer, 1, user);
+      topicSelect(buffer, 1, user, numSpaces);
       memset(buffer, 0, BUFFER_SIZE);
     }
 
     else if ((strcmp(command, "topic_propose") == 0) ||
              (strcmp(command, "tp") == 0)) {
-      status = topicPropose(buffer, user, topic);
+      status = topicPropose(buffer, user, topic, numSpaces);
       if (status == VALID) {
         status = communicateUDP(buffer, udp_fd, res, addr);
         if(status == VALID){
@@ -159,7 +160,7 @@ int main(int argc, char *argv[]) {
     else if ((strcmp(command, "question_list") == 0) ||
              (strcmp(command, "ql") == 0)) {
 
-      status = questionList(buffer, user);
+      status = questionList(buffer, user, numSpaces);
       if (status == VALID) {
         status = communicateUDP(buffer, udp_fd, res, addr);
         if(status == VALID){
@@ -174,7 +175,7 @@ int main(int argc, char *argv[]) {
     }
 
     else if (strcmp(command, "question_get") == 0) {
-      status = questionGet(buffer, 0, user, question);
+      status = questionGet(buffer, 0, user, question, numSpaces);
       if(status == VALID){
         printf("Question: '%s'.\n Sending: %s", question, buffer);
       }
@@ -182,7 +183,7 @@ int main(int argc, char *argv[]) {
     }
 
     else if (strcmp(command, "qg") == 0) {
-      status = questionGet(buffer, 1, user, question);
+      status = questionGet(buffer, 1, user, question, numSpaces);
       if(status == VALID){
         if(connectTCP(res,aux, &tcp_fd)){
           if(sendTCP(buffer, tcp_fd)){
@@ -212,9 +213,10 @@ int main(int argc, char *argv[]) {
       for (i = 0; i < COMMANDS; i++) {
         memset(commandArgs[i], 0, ARG_SIZE);
       }
-      parseCommand(buffer, commandArgs);
+      status = parseCommand(buffer, commandArgs);
       
-      status = questionSubmit(user, commandArgs, submission);
+      if (status == VALID)
+        status = questionSubmit(user, commandArgs, submission, numSpaces);
       if(status == VALID){
         if(connectTCP(res,aux, &tcp_fd)){
           if(sendSubmission(user, submission, buffer, tcp_fd, 1) == VALID){
@@ -244,9 +246,11 @@ int main(int argc, char *argv[]) {
       for (i = 0; i < COMMANDS; i++) {
         memset(commandArgs[i], 0, ARG_SIZE);
       }
-      parseCommand(buffer, commandArgs);
-      status = answerSubmit(user, commandArgs, submission);
-            if(status == VALID){
+      status = parseCommand(buffer, commandArgs);
+      
+      if (status == VALID) 
+        status = answerSubmit(user, commandArgs, submission, numSpaces);
+      if(status == VALID){
         if(connectTCP(res,aux, &tcp_fd)){
           if(sendSubmission(user, submission, buffer, tcp_fd, 0) == VALID){
             
@@ -277,7 +281,8 @@ int main(int argc, char *argv[]) {
     memset(command, 0, COMMAND_SIZE);
     printf(">> ");
     scanf("%s", command);
-    readCommand(buffer);
+    numSpaces = 0;
+    readCommand(buffer, &numSpaces);
   }
   endClient(commandArgs, user, udp_fd, buffer);
   return 0;
@@ -303,13 +308,14 @@ void parseArgs(int argc, char *argv[], char *port, char *server_IP) {
   return;
 }
 
-int readCommand(char *buffer) {
+int readCommand(char *buffer, int *numSpaces) {
   memset(buffer, 0, BUFFER_SIZE);
   char c;
   int i = 0;
 
   while ((c = getchar()) != '\n') {
     if (!i && c == ' ') {
+      *numSpaces += 1;
       continue; // Removes first space after command
     }
     buffer[i] = c;

@@ -4,12 +4,12 @@
 
 ////////////////// UDP COMMANDS ///////////////////////////////////
 
-int registerUser(char *buffer, struct User *user) {
+int registerUser(char *buffer, struct User *user, int numSpaces) {
   char *token;
   int id, n, count = 0;
 
-  if (strlen(buffer) != REGISTER_REG_LENGTH) {
-    printf("Invalid command format.1\n");
+  if (strlen(buffer) != REGISTER_REG_LENGTH || numSpaces != 1) {
+    printf("Invalid command format.\n");
     return INVALID;
   }
 
@@ -18,7 +18,7 @@ int registerUser(char *buffer, struct User *user) {
   n = id;
 
   if (id == 0) {
-    printf("Invalid command format.2\n");
+    printf("Invalid command format.\n");
     return INVALID;
   }
 
@@ -27,12 +27,12 @@ int registerUser(char *buffer, struct User *user) {
     ++count;
   }
   if (count != 5) {
-    printf("Invalid command format.3\n");
+    printf("Invalid command format.\n");
     return INVALID;
   }
 
   if ((token = strtok(NULL, " ")) != NULL) {
-    printf("Invalid command format.4\n");
+    printf("Invalid command format.\n");
     return INVALID;
   }
 
@@ -42,10 +42,10 @@ int registerUser(char *buffer, struct User *user) {
   return VALID;
 }
 
-int topicList(char *buffer, struct User *user) {
+int topicList(char *buffer, struct User *user, int numSpaces) {
   char *token;
 
-  if (strlen(buffer) != TOPIC_LIST_LENGTH) {
+  if (strlen(buffer) != TOPIC_LIST_LENGTH || numSpaces != 0) {
     printf("Invalid command format.\n");
     return INVALID;
   }
@@ -60,7 +60,7 @@ int topicList(char *buffer, struct User *user) {
   return VALID;
 }
 
-void topicSelect(char *buffer, int flag, struct User *user) {
+void topicSelect(char *buffer, int flag, struct User *user, int numSpaces) {
   char *token, *topic;
   int num, buffer_size, i = 0, n_topics, status = INVALID;
 
@@ -73,7 +73,7 @@ void topicSelect(char *buffer, int flag, struct User *user) {
     return;
   }
 
-  if ((buffer_size - strlen(token)) > 1) {
+  if ((buffer_size - strlen(token)) > 0 || numSpaces != 1) {
     printf("Invalid command format.\n");
     return;
   }
@@ -113,7 +113,7 @@ void topicSelect(char *buffer, int flag, struct User *user) {
   return;
 }
 
-int topicPropose(char *buffer, struct User *user, char aux_topic[]) {
+int topicPropose(char *buffer, struct User *user, char aux_topic[], int numSpaces) {
   char *token, *topic;
   int buffer_size;
 
@@ -130,7 +130,7 @@ int topicPropose(char *buffer, struct User *user, char aux_topic[]) {
     return INVALID;
   }
 
-  if ((buffer_size - strlen(token)) > 1) {
+  if ((buffer_size - strlen(token)) > 0 || numSpaces != 1) {
     printf("Invalid command format.\n");
     return INVALID;
   }
@@ -146,10 +146,10 @@ int topicPropose(char *buffer, struct User *user, char aux_topic[]) {
   return VALID;
 }
 
-int questionList(char *buffer, struct User *user) {
+int questionList(char *buffer, struct User *user, int numSpaces) {
   char *token;
 
-  if (strlen(buffer) != QUESTION_LIST_LENGTH) {
+  if (strlen(buffer) != QUESTION_LIST_LENGTH || numSpaces != 0) {
     printf("Invalid command format.\n");
     return INVALID;
   }
@@ -170,7 +170,7 @@ int questionList(char *buffer, struct User *user) {
 }
 
 ////////////////// TCP COMMANDS ///////////////////////////////////
-int questionGet(char *buffer, int flag, struct User *user, char aux_question[]){	//TODO: get question from the question list
+int questionGet(char *buffer, int flag, struct User *user, char aux_question[], int numSpaces){	//TODO: get question from the question list
 	char *token;
 	int i, status = INVALID, num, buffer_size, n_questions = user->num_questions;
 	char *question;
@@ -183,7 +183,7 @@ int questionGet(char *buffer, int flag, struct User *user, char aux_question[]){
 		return INVALID;
 	}
 
-	if((buffer_size - strlen(token)) > 1) {
+	if((buffer_size - strlen(token)) > 0 || numSpaces != 1) {
 		printf("Invalid command format.\n");
 		return INVALID;
 	}
@@ -229,7 +229,7 @@ int questionGet(char *buffer, int flag, struct User *user, char aux_question[]){
 	return VALID;
 }
 
-int questionSubmit(struct User *user, char *commandArgs[], struct Submission* submission){
+int questionSubmit(struct User *user, char *commandArgs[], struct Submission* submission, int numSpaces){
 	int i;
 	char *aux;
 	char *question;
@@ -263,14 +263,14 @@ int questionSubmit(struct User *user, char *commandArgs[], struct Submission* su
   // Check if there is a question in the input
 	question = commandArgs[0];
 	if(strlen(question) == 0) {
-		printf("Invalid command format1.\n");
+		printf("Invalid command format.\n");
 		return INVALID;
 	}
 
   // Check if there is a text file in the input with name smaller than 10 chars
 	text_file = commandArgs[1];
-	if((strlen(text_file) == 0) || strlen(question) > QUESTION_SIZE) {
-		printf("Invalid command format2.\n");
+	if((strlen(text_file) == 0) || strlen(question) > QUESTION_SIZE || numSpaces != 1) {
+		printf("Invalid command format.\n");
 		return INVALID;
 	}
 
@@ -290,7 +290,7 @@ int questionSubmit(struct User *user, char *commandArgs[], struct Submission* su
 		image_file = strtok(aux, ".");
 		ext = strtok(NULL, " ");
 		if (image_file == NULL || ext == NULL) {
-			printf("Invalid command format3.\n");
+			printf("Invalid command format.\n");
 			return INVALID;
 		}
 		if (!fileExists(imagename)) {
@@ -351,7 +351,7 @@ int questionSubmit(struct User *user, char *commandArgs[], struct Submission* su
 	return VALID;
 }
 
-int answerSubmit(struct User *user, char *commandArgs[], struct Submission* submission) {
+int answerSubmit(struct User *user, char *commandArgs[], struct Submission* submission, int numSpaces) {
   int i;
   char *aux;
   char *text_file;
@@ -362,6 +362,11 @@ int answerSubmit(struct User *user, char *commandArgs[], struct Submission* subm
   // Allocate memory for filename and imagename
 	char *filename = (char*)malloc(BUFFER_SIZE * sizeof(char));
 	char *imagename = (char*)malloc(BUFFER_SIZE * sizeof(char));
+
+  if (numSpaces != 1) {
+    printf("Invalid command format.\n");
+		return INVALID;
+  }
 
 	if (filename == NULL) {
 		printf("Error allocating memory.\n");
