@@ -87,9 +87,9 @@ int fileExists(char *filename) {
   struct stat st;
   if (stat(filename, &st) == 0) { // Exists
     return (int)st.st_size;
-  } else if (errno == ENOENT) {// Stat fails and err = file doesn't exist
+  } else if (errno == ENOENT) { // Stat fails and err = file doesn't exist
     return 0;
-  } else {  // Stat error
+  } else { // Stat error
     return -1;
   }
 }
@@ -258,7 +258,6 @@ int writeTCP(int fd, char *buffer, int size) {
     }
     nread += n;
   }
-  printf("%s", buffer);
   return n;
 }
 
