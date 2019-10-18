@@ -210,7 +210,7 @@ int main(int argc, char *argv[]) {
             memset(buffer, 0, BUFFER_SIZE);
             status = handleGQR(buffer, user, tcp_fd);
             if (status == VALID) {
-              printf("Received: '%s'\n", buffer);
+              //printf("Received: '%s'\n", buffer);
             } else if(status ==ERR){
               endClient(commandArgs, user, udp_fd, tcp_fd, buffer);
               exit(1);
