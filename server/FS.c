@@ -80,11 +80,11 @@ int tcpHandler(char *command, int fd) {
   return 0;
 }
 
-void tcpCommunicate(int fd) {
+int tcpCommunicate(int fd) {
   char command[8];
 
   int nread = 0;
-  memset(command, 0 , 8);
+  memset(command, 0, 8);
 
   printf("\tRECEIVED: ");
   while (nread < 4) {
@@ -96,12 +96,12 @@ void tcpCommunicate(int fd) {
   if (command[3] != ' ') {
     printf("\tERR1\n");
     write(fd, "ERR\n", 4);
-    return;
+    return -1;
   }
 
   command[3] = 0;
 
-  tcpHandler(command, fd);
+  return tcpHandler(command, fd);
 }
 
 void initFS() {
@@ -114,6 +114,7 @@ void initFS() {
 int main(int argc, char *argv[]) {
   struct sigaction act1;
   struct sigaction act2;
+  struct sigaction act3;
   struct addrinfo hints, *res, *i;
   struct sockaddr_in addr;
   pid_t pid;
@@ -144,8 +145,8 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  act2.sa_handler = sigHandler;
-  if (sigaction(SIGINT, &act2, NULL) == -1) {
+  act3.sa_handler = SIG_IGN;
+  if (sigaction(SIGPIPE, &act3, NULL) == -1) {
     printf("Error with sigaction\n");
     exit(1);
   }

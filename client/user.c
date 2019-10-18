@@ -23,6 +23,12 @@ int main(int argc, char *argv[]) {
   char *buffer, **commandArgs, *port, *server_IP, command[COMMAND_SIZE];
   int numSpaces = 0;
   char topic[TOPIC_SIZE];
+  struct sigaction act1;
+  act1.sa_handler = SIG_IGN;
+  if (sigaction(SIGPIPE, &act1, NULL) == -1) {
+    printf("Error with sigaction\n");
+    exit(1);
+  }
 
   user = initUser();
   submission = initSubmission();
