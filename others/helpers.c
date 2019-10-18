@@ -9,9 +9,9 @@ int max(int x, int y) {
 
 int comparator(const void *p, const void *q) {
   char p_c[32], q_c[32];
-  struct stat p_s = {0}, q_s = {0};
-  sprintf(p_c, "%s/%s", TOPICS, (char *)p);
-  sprintf(q_c, "%s/%s", TOPICS, (char *)q);
+  struct stat p_s, q_s;
+  sprintf(p_c, "%s", (char *)p);
+  sprintf(q_c, "%s", (char *)q);
   stat(p_c, &p_s);
   stat(q_c, &q_s);
 
@@ -249,16 +249,16 @@ void deleteDir(const char path[]) {
 // }
 
 int writeTCP(int fd, char *buffer, int size) {
-  int nread = 0;
+  int nw = 0;
   int n;
-  while (nread < size) {
-    n = write(fd, buffer + nread, size - nread);
+  while (nw < size) {
+    n = write(fd, buffer + nw, size - nw);
     if (n == -1) {
       return -1;
     }
-    nread += n;
+    nw += n;
   }
-  return nread;
+  return nw;
 }
 
 // getAnswerNumber returns the number of the answer as a string of size 2.
