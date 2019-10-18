@@ -79,7 +79,6 @@ int handleGetQuestion(int fd) {
     writeTCP(fd, errS, 4);
     return -1;
   }
-  printf("%s", s);
 
   // Parse info
   err = parseGetQuestion(buffer, topic, question);
@@ -98,7 +97,6 @@ int handleGetQuestion(int fd) {
   err = fileExists(path);
   if (err == 0) { // Check if path exists
     writeTCP(fd, "EOF\n", 4);
-    printf("EOF\n");
     return 0;
   } else if (err == -1) {
     writeTCP(fd, errS, 4);
@@ -276,8 +274,6 @@ int handleGetQuestion(int fd) {
       return -1;
     }
 
-    printf("%s", s);
-
     // write imgdata
     f = fopen(filename, "rb");
     if (f == NULL) {
@@ -301,8 +297,6 @@ int handleGetQuestion(int fd) {
       }
       nleft -= chunk;
     }
-
-    printf("[-------SENT %d BYTES OF DATA------>]", size);
 
     fclose(f);
 
@@ -423,8 +417,6 @@ int handleGetQuestion(int fd) {
       return -1;
     }
 
-    printf("%s", resp);
-
     // Open, read and send data file
 
     f = fopen(filename, "r");
@@ -450,8 +442,6 @@ int handleGetQuestion(int fd) {
       }
       nleft -= chunk;
     }
-
-    printf("[-------SENT %d BYTES OF DATA------>]", size);
 
     fclose(f);
 
@@ -501,8 +491,6 @@ int handleGetQuestion(int fd) {
         return -1;
       }
 
-      printf("%s", s);
-
       // write imgdata
       f = fopen(filename, "rb");
       if (f == NULL) {
@@ -534,8 +522,6 @@ int handleGetQuestion(int fd) {
         }
         nleft -= chunk;
       }
-
-      printf("[-------SENT %d BYTES OF DATA------>]", size);
 
       fclose(f);
     }

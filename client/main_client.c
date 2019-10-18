@@ -1,16 +1,14 @@
 #include "../others/consts.h"
 #include "../others/helpers.h"
 #include "client_commands.h"
-#include "client_handlers.h"
 #include "client_communication.h"
+#include "client_handlers.h"
 
 void parseArgs(int argc, char *argv[], char *port, char *server_IP);
 int readCommand(char *buffer, int *numSpaces);
 void endClient(char **commandArgs, struct User *user, int udp_fd, char *buffer);
 struct User *initUser();
 struct Submission *initSubmission();
-
-
 
 int main(int argc, char *argv[]) {
 
@@ -41,8 +39,8 @@ int main(int argc, char *argv[]) {
   }
 
   memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_INET;      // IPv4
-  hints.ai_socktype = 0; // Both UDP and TCP socket
+  hints.ai_family = AF_INET; // IPv4
+  hints.ai_socktype = 0;     // Both UDP and TCP socket
   hints.ai_flags = AI_NUMERICSERV;
 
   // Checks if any of the '-n' or '-p' flags was used
@@ -79,9 +77,9 @@ int main(int argc, char *argv[]) {
   }
 
   // Opens Sockets
-  for (aux = res; aux != NULL; aux = aux->ai_next){
+  for (aux = res; aux != NULL; aux = aux->ai_next) {
 
-    if (aux->ai_socktype == SOCK_DGRAM){                                     //UDP Socket
+    if (aux->ai_socktype == SOCK_DGRAM) { // UDP Socket
       udp_fd = socket(aux->ai_family, aux->ai_socktype, aux->ai_protocol);
 
       if (udp_fd == -1) {
@@ -117,10 +115,9 @@ int main(int argc, char *argv[]) {
       status = registerUser(buffer, user, numSpaces);
       if (status == VALID) {
         status = communicateUDP(buffer, udp_fd, res, addr);
-        if( status == VALID){
+        if (status == VALID) {
           handleRGR(buffer, user);
-        }
-        else if(status == ERR){
+        } else if (status == ERR) {
           endClient(commandArgs, user, udp_fd, buffer);
           exit(1);
         }
@@ -136,8 +133,7 @@ int main(int argc, char *argv[]) {
         if (status == VALID) {
           parseCommand(buffer, commandArgs);
           handleLTR(commandArgs, user);
-        }
-        else if(status == ERR){
+        } else if (status == ERR) {
           endClient(commandArgs, user, udp_fd, buffer);
           exit(1);
         }
@@ -159,10 +155,9 @@ int main(int argc, char *argv[]) {
       status = topicPropose(buffer, user, topic, numSpaces);
       if (status == VALID) {
         status = communicateUDP(buffer, udp_fd, res, addr);
-        if(status == VALID){
+        if (status == VALID) {
           handlePTR(buffer, user, topic);
-        }
-        else if(status == ERR){
+        } else if (status == ERR) {
           endClient(commandArgs, user, udp_fd, buffer);
           exit(1);
         }
@@ -175,11 +170,10 @@ int main(int argc, char *argv[]) {
       status = questionList(buffer, user, numSpaces);
       if (status == VALID) {
         status = communicateUDP(buffer, udp_fd, res, addr);
-        if(status == VALID){
+        if (status == VALID) {
           parseCommand(buffer, commandArgs);
-           handleLQR(commandArgs, user);
-        }
-        else if(status == ERR){
+          handleLQR(commandArgs, user);
+        } else if (status == ERR) {
           endClient(commandArgs, user, udp_fd, buffer);
           exit(1);
         }
@@ -188,30 +182,32 @@ int main(int argc, char *argv[]) {
 
     else if (strcmp(command, "question_get") == 0) {
       status = questionGet(buffer, 0, user, numSpaces);
-      if(status == VALID){
+      if (status == VALID) {
         printf("Question: '%s'.\n Sending: %s", user->aux_question, buffer);
+
+        if (sendTCP(buffer, tcp_fd)) {
+
+          // err = handleQGR(buffer, tcp_fd);
+
+        } else {
+          printf("Error sending msg to server.\n");
+        }
+        if (tcp_fd > 0) {
+          close(tcp_fd);
+        }
       }
-    
-    }
-    else if (strcmp(command, "qg") == 0) {
+    } else if (strcmp(command, "qg") == 0) {
       status = questionGet(buffer, 1, user, numSpaces);
-      if(status == VALID){
-        if(connectTCP(res,aux, &tcp_fd)){
-          if(sendTCP(buffer, tcp_fd)){
-            
-            memset(buffer, 0, BUFFER_SIZE);
-  
-            if(receiveTCP(buffer, BUFFER_SIZE, tcp_fd ) == VALID){
-              printf("Received: '%s'\n", buffer);
-            }
-            else{
-              printf("Error receiving msg from server.\n");
-            }
-          }
-          else{
+      if (status == VALID) {
+        if (connectTCP(res, aux, &tcp_fd)) {
+          if (sendTCP(buffer, tcp_fd)) {
+
+            // err = handleQGR(buffer, tcp_fd);
+
+          } else {
             printf("Error sending msg to server.\n");
           }
-          if(tcp_fd > 0){
+          if (tcp_fd > 0) {
             close(tcp_fd);
           }
         }
@@ -225,24 +221,22 @@ int main(int argc, char *argv[]) {
         memset(commandArgs[i], 0, ARG_SIZE);
       }
       status = parseCommand(buffer, commandArgs);
-      
+
       if (status == VALID)
         status = questionSubmit(user, commandArgs, submission, numSpaces);
-      if(status == VALID){
-        if(connectTCP(res,aux, &tcp_fd)){
+      if (status == VALID) {
+        if (connectTCP(res, aux, &tcp_fd)) {
           status = sendSubmission(user, submission, buffer, tcp_fd, 1);
-          if(status == VALID){
+          if (status == VALID) {
             memset(buffer, 0, BUFFER_SIZE);
-            handleQUR(buffer, user,  tcp_fd);  
-          }
-          else if(status == INVALID){
+            handleQUR(buffer, user, tcp_fd);
+          } else if (status == INVALID) {
             printf("Error sending msg to server.\n");
-          }
-          else{
+          } else {
             endClient(commandArgs, user, udp_fd, buffer);
             exit(1);
           }
-          if(tcp_fd > 0){
+          if (tcp_fd > 0) {
             close(tcp_fd);
           }
         }
@@ -256,24 +250,22 @@ int main(int argc, char *argv[]) {
         memset(commandArgs[i], 0, ARG_SIZE);
       }
       status = parseCommand(buffer, commandArgs);
-      
-      if (status == VALID) 
+
+      if (status == VALID)
         status = answerSubmit(user, commandArgs, submission, numSpaces);
-      if(status == VALID){
-        if(connectTCP(res,aux, &tcp_fd)){
+      if (status == VALID) {
+        if (connectTCP(res, aux, &tcp_fd)) {
           status = sendSubmission(user, submission, buffer, tcp_fd, 0);
-          if(status == VALID){
+          if (status == VALID) {
             memset(buffer, 0, BUFFER_SIZE);
             handleANR(buffer, user, tcp_fd);
-          }
-          else if(status == INVALID){
+          } else if (status == INVALID) {
             printf("Error sending msg to server.\n");
-          }
-          else{
+          } else {
             endClient(commandArgs, user, udp_fd, buffer);
             exit(1);
           }
-          if(tcp_fd > 0){
+          if (tcp_fd > 0) {
             close(tcp_fd);
           }
         }
@@ -302,7 +294,6 @@ int main(int argc, char *argv[]) {
     }
     if (numSpaces == 1)
       readCommand(buffer, &numSpaces);
-
   }
   endClient(commandArgs, user, udp_fd, buffer);
   return 0;
@@ -404,7 +395,8 @@ struct User *initUser() {
 }
 
 struct Submission *initSubmission() {
-  struct Submission *submission = (struct Submission *)malloc(sizeof(struct Submission));
+  struct Submission *submission =
+      (struct Submission *)malloc(sizeof(struct Submission));
   if (submission == NULL) {
     printf("Error allocating memory.\n");
     exit(1);
@@ -419,17 +411,18 @@ struct Submission *initSubmission() {
   return submission;
 }
 
-void endClient(char **commandArgs, struct User *user, int udp_fd, char *buffer){
+void endClient(char **commandArgs, struct User *user, int udp_fd,
+               char *buffer) {
   int i;
   free(user->selected_question);
   free(user->selected_topic);
   free(user->aux_question);
-  
-  if(udp_fd > 0){
+
+  if (udp_fd > 0) {
     close(udp_fd);
   }
 
-  for(i = 0; i < MAX_TOPICS; i++){
+  for (i = 0; i < MAX_TOPICS; i++) {
     free(user->topics[i]);
     free(user->questions[i]);
   }
@@ -437,7 +430,7 @@ void endClient(char **commandArgs, struct User *user, int udp_fd, char *buffer){
   free(user->topics);
   free(user->questions);
 
-  for(i = 0; i < MAX_TOPICS; i++){
+  for (i = 0; i < MAX_TOPICS; i++) {
     free(commandArgs[i]);
   }
 
@@ -445,5 +438,3 @@ void endClient(char **commandArgs, struct User *user, int udp_fd, char *buffer){
   free(buffer);
   return;
 }
-
-

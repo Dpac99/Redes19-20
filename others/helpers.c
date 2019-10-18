@@ -249,15 +249,17 @@ void deleteDir(const char path[]) {
 // }
 
 int writeTCP(int fd, char *buffer, int size) {
-  int nread = 0;
+  int nw = 0;
   int n;
-  while (nread < size) {
-    n = write(fd, buffer + nread, size - nread);
+  while (nw < size) {
+    n = write(fd, buffer + nw, size - nw);
     if (n == -1) {
       return -1;
     }
-    nread += n;
+    nw += n;
   }
+
+  printf("|%s|", buffer);
   return n;
 }
 
