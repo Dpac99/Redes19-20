@@ -82,12 +82,15 @@ void topicSelect(char *buffer, int flag, struct User *user, int numSpaces) {
     if (flag) { // input "ts num"
       if (isnumber(token)) {
         num = atoi(token);
-        if (num <= 0 || num > MAX_TOPICS)
+        if (num <= 0 || num > n_topics)
           printf("Invalid command format.\n");
         else {
           user->selected_topic = user->topics[num - 1];
           status = VALID;
         }
+      }
+      else{
+        printf("Invalid command format.\n");
       }
     } else { // input "topic_select topic"
       topic = token;
@@ -105,6 +108,7 @@ void topicSelect(char *buffer, int flag, struct User *user, int numSpaces) {
           printf("The topic %s doesn't exist. Try again.\n", topic);
       }
     }
+
     if (status == VALID) {
       printf("Topic '%s' is now selected.\n", user->selected_topic);
     }
@@ -510,7 +514,7 @@ int sendSubmission(struct User *user, struct Submission *submission, char *buffe
     buffer[i] = c;
     if (i == (BUFFER_SIZE - 1)) {
 
-      if (!sendTCPText(buffer, tcp_fd)) {
+      if (sendTCPText(buffer, tcp_fd) == ERR) {
         printf("Error sending msg to server.\n");
         return ERR;
       }
@@ -521,7 +525,7 @@ int sendSubmission(struct User *user, struct Submission *submission, char *buffe
     i++;
   }
 
-  if (!sendTCPText(buffer, tcp_fd)) {
+  if (sendTCPText(buffer, tcp_fd) == ERR) {
     printf("Error sending msg to server.\n");
     return ERR;
   }

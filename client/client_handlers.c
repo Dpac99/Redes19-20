@@ -3,7 +3,7 @@
 
 // PROTOCOL RESPONSE HANDLERS
 
-void handleRGR(char *buffer, struct User *user) {
+int handleRGR(char *buffer, struct User *user) {
   char *token;
   token = strtok(buffer, " ");
 
@@ -14,11 +14,18 @@ void handleRGR(char *buffer, struct User *user) {
     } else if (strcmp(token, NOK) == 0) {
       printf("Failed to register user '%d'.\n", user->userId);
       user->userId = -1;
+	  return INVALID;
     }
-  } else {
-    printf("Error receiving answer from server.\n");
   }
-  return;
+  else if(strcmp(token, ERROR) == 0){
+	  printf("Server reported a fatal error.\n");
+	  return ERR;
+  }
+  else {
+    printf("Error receiving answer from server.\n");
+	return INVALID;
+  }
+  return VALID;
 }
 
 int handleLTR(char *commandArgs[], struct User *user) {
@@ -52,7 +59,10 @@ int handleLTR(char *commandArgs[], struct User *user) {
         printf("No topics available yet.\n");
     } else
       err = 1;
-  } else {
+  } else if(strcmp(commandArgs[0], ERROR) == 0){
+	  err = -1;
+  }
+  else {
     err = 1;
   }
 
@@ -62,6 +72,12 @@ int handleLTR(char *commandArgs[], struct User *user) {
       memset(user->topics[i], 0, TOPIC_SIZE);
     }
     return INVALID;
+  }else if(err == -1){
+	printf("Server reported a fatal error.\n");
+    for (i = 0; i < n_topics + 2; i++) {
+      memset(user->topics[i], 0, TOPIC_SIZE);
+    }
+    return ERR;
   }
 
   for (i = 0; i < n_topics; i++) {
@@ -96,10 +112,13 @@ int handlePTR(char *buffer, struct User *user, char aux_topic[]) {
       printf("Failed to propose topic '%s'.\n", aux_topic);
     } else if (strcmp(token, DUP) == 0) {
       printf("Topic '%s' already exists.\n", aux_topic);
-    } else if (strcmp(token, FULL)) {
+    } else if (strcmp(token, FULL) == 0) {
       printf("Couldn't propose topic '%s'. There are already too many top\n",
              aux_topic);
-    } else {
+    } else if(strcmp(token, ERROR) == 0){
+		printf("Server reported a fatal error.\n");
+      	return ERR;
+	}else {
       printf("Error receiving answer from server.\n");
       return INVALID;
     }
@@ -170,6 +189,9 @@ int handleLQR(char *commandArgs[], struct User *user){
 			err = 1;
 		}
 	}
+	else if(strcmp(commandArgs[0], ERROR) == 0){
+		err = ERR;
+	}
 	else{
 		err = 1;
 	}
@@ -180,6 +202,12 @@ int handleLQR(char *commandArgs[], struct User *user){
 			memset(user->questions[i], 0, TOPIC_SIZE);
 		}
 		return INVALID;
+	}else if(err == ERR){
+		printf("Server reported a fatal error.\n");
+		for(i = 0; i < n_questions + 2; i++){
+			memset(user->questions[i], 0, TOPIC_SIZE);
+		}
+		return ERR;
 	}
 
 	
@@ -234,7 +262,7 @@ int handleQUR(char *buffer, struct User *user, int tcp_fd){
 				printf("Couldn't submit question '%s'. Topic '%s' can't accept more questions for now.\n", user->aux_question, user->selected_topic);
 			}
 			else if(strcmp(token, ERROR) == 0){
-				printf("Error receiving answer from server.\n");
+				printf("Server reported a fatal error.\n");
 				return ERR;
 			}
 			else{

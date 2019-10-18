@@ -69,7 +69,7 @@ int sendTCPText(char *buffer, int tcp_fd){
   while(nleft > 0){
     nwritten=write(fd, ptr, nleft);
     if(nwritten <= 0){
-      close(fd);
+      //close(fd);
       return ERR;
     }
     nleft -= nwritten;
