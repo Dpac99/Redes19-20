@@ -258,7 +258,7 @@ int writeTCP(int fd, char *buffer, int size) {
     }
     nread += n;
   }
-  return n;
+  return nread;
 }
 
 // getAnswerNumber returns the number of the answer as a string of size 2.

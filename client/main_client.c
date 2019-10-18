@@ -197,7 +197,7 @@ int main(int argc, char *argv[]) {
       status = questionGet(buffer, 1, user, numSpaces);
       if(status == VALID){
         if(connectTCP(res,aux, &tcp_fd)){
-          if(sendTCP(buffer, tcp_fd)){
+          if(sendTCPText(buffer, tcp_fd)){
             
             memset(buffer, 0, BUFFER_SIZE);
   

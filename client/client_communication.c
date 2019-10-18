@@ -58,7 +58,7 @@ int connectTCP(struct addrinfo *res, struct addrinfo *aux, int *tcp_fd){
   return VALID;
 }
 
-int sendTCP(char *buffer, int tcp_fd){
+int sendTCPText(char *buffer, int tcp_fd){
   int fd = tcp_fd;
   int nbytes, nleft, nwritten;
   char *ptr = buffer;
