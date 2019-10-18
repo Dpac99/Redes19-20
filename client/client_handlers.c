@@ -235,7 +235,7 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 			command[i] = buffer[i];
 		command[i] = '\0';
 		if (strcmp(command, GET_QUESTION_RESPONSE) != 0) {
-			printf("Error receiving answer from server\n");
+			printf("Error receiving answer from server1\n");
 			return INVALID;
 		}
 	}
@@ -261,11 +261,11 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 	if (status == ERR) {
 		return ERR;
 	} else if (status == 0) {
-		printf("Couldn't receive message from server.\n");
+		printf("Couldn't receive message from server1.\n");
 		return INVALID;
 	} else {
 		if (isnumber(buffer) == INVALID) {
-			printf("Error receiving answer from server\n");
+			printf("Error receiving answer from server2\n");
 			return INVALID;
 		}
 		for (i = 0; i < strlen(buffer); i++) {
@@ -274,7 +274,7 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 		}
 	}
 	if (numAnswers > 10 || numAnswers < 0) {
-		printf("Error receiving answer from server\n");
+		printf("Error receiving answer from server3\n");
 		return INVALID;
 	}
 
@@ -285,7 +285,7 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 		if (status == ERR) {
 			return ERR;
 		} else if (status == 0) {
-			printf("Couldn't receive message from server.\n");
+			printf("Couldn't receive message from server2.\n");
 			return INVALID;
 		}
 	}
@@ -297,7 +297,7 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 			if (status == ERR) {
 				return ERR;
 			} else if (status == 0) {
-				printf("Couldn't receive message from server.\n");
+				printf("Couldn't receive message from server3.\n");
 				return INVALID;
 			} else {
 				buffer[2] = '\0';	// Remove the space
@@ -326,7 +326,7 @@ int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra) {
 	if (status == ERR) {
 		return ERR;
 	} else if (status == 0) {
-		printf("Couldn't receive message from server.\n");
+		printf("Couldn't receive message from server4.\n");
 		return INVALID;
 	} else {
 		for (i = 0; i < 5; i++) {
@@ -341,10 +341,10 @@ int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra) {
 			printf("Question or topic does not exist\n");
 			return INVALID;
 		} else if (strcmp(qUserID, ERROR) == 0) {
-			printf("Error receiving answer from server\n");
+			printf("Error receiving answer from server4\n");
 			return ERR;
 		} else if (isnumber(qUserID) == INVALID || strlen(qUserID) != 5) {
-			printf("Error receiving answer from server\n");
+			printf("Error receiving answer from server. UserId: %s\n", qUserID);
 			return INVALID;
 		}
 
@@ -369,7 +369,7 @@ int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra) {
 		}
 		i++;
 		if (isnumber(sizeStr) == INVALID || strlen(sizeStr) > 10) {
-			printf("Error receiving answer from server\n");
+			printf("Error receiving answer from server6\n");
 			return INVALID;
 		}
 		for (j = 0; j < strlen(sizeStr); j++) {
@@ -408,7 +408,7 @@ int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra) {
 		if (status == ERR) {
 			return ERR;
 		} else if (status == 0) {
-			printf("Couldn't receive message from server.\n");
+			printf("Couldn't receive message from server5.\n");
 			return INVALID;
 		} else {
 			for (i = 0; i < BUFFER_SIZE; i++) {
@@ -423,7 +423,7 @@ int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra) {
 		if (status == ERR) {
 			return ERR;
 		} else if (status == 0) {
-			printf("Couldn't receive message from server.\n");
+			printf("Couldn't receive message from server6.\n");
 			return INVALID;
 		} else if (size != 0){
 			for (i = 0; i < size; i++) {
@@ -440,12 +440,15 @@ int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra) {
 	if (status == ERR) {
 		return ERR;
 	} else if (status == 0) {
-		printf("Couldn't receive message from server.\n");
+		printf("Error with server message format.\n");
 		return INVALID;
-	} else if (buffer[0] != ' '  || (buffer[1] != '0' && buffer[1] != '1') || buffer[2] != ' '){
-		printf("Couldn't receive message from server.\n");
+	} else if (buffer[0] != ' '  || (buffer[1] != '0' && buffer[1] != '1') ){
+		printf("Error with server message format.\n");
 		return INVALID;
-	} else {
+	} else if(  (buffer[2] != ' ') && ((buffer[2] != '\n'))){
+		printf("Error with server message format.\n");
+		return INVALID;
+	}else{
 		qIMG = buffer[1];
 	}
 
@@ -456,7 +459,7 @@ int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra) {
 		if (status == ERR) {
 			return ERR;
 		} else if (status == 0) {
-			printf("Couldn't receive message from server.\n");
+			printf("Couldn't receive message from server9.\n");
 			return INVALID;
 		} else {
 			for (i = 0; i < 3; i++)
@@ -473,7 +476,7 @@ int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra) {
 			i++;
 		}
 		if (isnumber(sizeStr) == INVALID || strlen(sizeStr) > 10) {
-			printf("Error receiving answer from server\n");
+			printf("Error receiving answer from server7\n");
 			return INVALID;
 		}
 		for (j = 0; j < strlen(sizeStr); j++) {
@@ -512,7 +515,7 @@ int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra) {
 			if (status == ERR) {
 				return ERR;
 			} else if (status == 0) {
-				printf("Couldn't receive message from server.\n");
+				printf("Couldn't receive message from server10.\n");
 				return INVALID;
 			} else {
 				for (i = 0; i < BUFFER_SIZE; i++) {
@@ -527,7 +530,7 @@ int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra) {
 			if (status == ERR) {
 				return ERR;
 			} else if (status == 0) {
-				printf("Couldn't receive message from server.\n");
+				printf("Couldn't receive message from server11.\n");
 				return INVALID;
 			} else if (isize != 0){
 				for (i = 0; i < isize; i++) {

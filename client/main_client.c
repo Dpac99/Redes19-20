@@ -211,7 +211,11 @@ int main(int argc, char *argv[]) {
             status = handleGQR(buffer, user, tcp_fd);
             if (status == VALID) {
               printf("Received: '%s'\n", buffer);
-            } else {
+            } else if(status ==ERR){
+              endClient(commandArgs, user, udp_fd, tcp_fd, buffer);
+              exit(1);
+            }
+            else{
               printf("Error receiving msg from server.\n");
             }
           } else {
