@@ -122,14 +122,8 @@ int main(int argc, char *argv[]) {
   int udp_fd = 0, tcp_fd = 0, errcode, maxfd, nready, resp_fd;
   ssize_t nread, nsent;
   char buffer[BUFFER_SIZE], buffer2[BUFFER_SIZE], host[BUFFER_SIZE],
-      service[BUFFER_SIZE], *port;
+      service[BUFFER_SIZE], port[16];
   fd_set rfds;
-
-  port = (char *)malloc(16);
-  if (port == NULL) {
-    printf("Error allocating memory.\n");
-    exit(1);
-  }
 
   parseArgs(argc, argv, port);
 
