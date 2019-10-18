@@ -11,7 +11,7 @@ int handleLQR(char *commandArgs[], struct User *user);
 
 //TCP Handlers
 int handleGQR(char *buffer, struct User *user, int tcp_fd);
-int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra);
+int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra, int answer);
 int handleQUR(char *buffer, struct User *user, int tcp_fd);
 int handleANR(char *buffer, struct User *user, int tcp_fd);
 

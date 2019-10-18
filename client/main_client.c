@@ -215,9 +215,6 @@ int main(int argc, char *argv[]) {
               endClient(commandArgs, user, udp_fd, tcp_fd, buffer);
               exit(1);
             }
-            else{
-              printf("Error receiving msg from server.\n");
-            }
           } else {
             printf("Error sending msg to server.\n");
           }

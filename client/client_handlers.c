@@ -239,7 +239,7 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 			return INVALID;
 		}
 	}
-	status = handleGQRAux(buffer, user, tcp_fd, an);
+	status = handleGQRAux(buffer, user, tcp_fd, an, 0);
 	if (status != VALID)
 		return status;
 
@@ -303,7 +303,7 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 				buffer[2] = '\0';	// Remove the space
 				strcpy(an, "_");
 				strcat(an, buffer);
-				status = handleGQRAux(buffer, user, tcp_fd, an);
+				status = handleGQRAux(buffer, user, tcp_fd, an, 1);
 				if (status != VALID)
 					return status;
 			}
@@ -313,7 +313,7 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 	return VALID;
 }
 
-int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra) {
+int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra, int answer) {
 	int qIMG, isize = 0, i, j, status, size = 0;
 	char qUserID[6], sizeStr[10], ext[4];
 	char dirname[128], filename[128];
@@ -540,6 +540,20 @@ int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra) {
 		}
 		fputc(EOF, fp);
 		fclose(fp);
+
+		if( answer){
+					memset(buffer, 0, BUFFER_SIZE);
+			status = receiveTCP(buffer, 1, tcp_fd);
+			if (status == ERR) {
+				return ERR;
+			} else if (status == 0) {
+				printf("Couldn't receive message from server11.\n");
+				return INVALID;
+			} else if ((buffer[0] != ' ') && buffer[0] != '\n'){
+				printf("Error with server message format.\n");
+				return INVALID;
+			}
+		}
 	} 
 
 	return VALID;
