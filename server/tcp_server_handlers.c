@@ -911,6 +911,10 @@ int handleSubmitQuestion(int fd) {
                                                   // until nleft is smaller
         int n = read(fd, buffer, chunk);
         naux -= n;
+        if (naux == 0) {
+          n--;
+        }
+
         err = fwrite(buffer, sizeof(char), n, f);
         if (err != n) {
           writeTCP(fd, "ERR\n", 4);
@@ -1245,6 +1249,9 @@ int handleSubmitAnswer(int fd) {
                                                   // until nleft is smaller
         int n = read(fd, buffer, chunk);
         naux -= n;
+        if (naux == 0) {
+          n--;
+        }
         int nsaved = fwrite(buffer, sizeof(char), n, f);
         if (nsaved != n) {
           writeTCP(fd, "ERR\n", 4);
