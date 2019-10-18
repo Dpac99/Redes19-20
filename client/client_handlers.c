@@ -3,7 +3,7 @@
 
 // PROTOCOL RESPONSE HANDLERS
 
-void handleRGR(char *buffer, struct User *user) {
+int handleRGR(char *buffer, struct User *user) {
   char *token;
   token = strtok(buffer, " ");
 
@@ -14,11 +14,16 @@ void handleRGR(char *buffer, struct User *user) {
     } else if (strcmp(token, NOK) == 0) {
       printf("Failed to register user '%d'.\n", user->userId);
       user->userId = -1;
+      return INVALID;
     }
+  } else if (strcmp(token, ERROR) == 0) {
+    printf("Server reported a fatal error.\n");
+    return ERR;
   } else {
     printf("Error receiving answer from server.\n");
+    return INVALID;
   }
-  return;
+  return VALID;
 }
 
 int handleLTR(char *commandArgs[], struct User *user) {
@@ -52,6 +57,8 @@ int handleLTR(char *commandArgs[], struct User *user) {
         printf("No topics available yet.\n");
     } else
       err = 1;
+  } else if (strcmp(commandArgs[0], ERROR) == 0) {
+    err = -1;
   } else {
     err = 1;
   }
@@ -62,6 +69,12 @@ int handleLTR(char *commandArgs[], struct User *user) {
       memset(user->topics[i], 0, TOPIC_SIZE);
     }
     return INVALID;
+  } else if (err == -1) {
+    printf("Server reported a fatal error.\n");
+    for (i = 0; i < n_topics + 2; i++) {
+      memset(user->topics[i], 0, TOPIC_SIZE);
+    }
+    return ERR;
   }
 
   for (i = 0; i < n_topics; i++) {
@@ -96,9 +109,12 @@ int handlePTR(char *buffer, struct User *user, char aux_topic[]) {
       printf("Failed to propose topic '%s'.\n", aux_topic);
     } else if (strcmp(token, DUP) == 0) {
       printf("Topic '%s' already exists.\n", aux_topic);
-    } else if (strcmp(token, FULL)) {
+    } else if (strcmp(token, FULL) == 0) {
       printf("Couldn't propose topic '%s'. There are already too many top\n",
              aux_topic);
+    } else if (strcmp(token, ERROR) == 0) {
+      printf("Server reported a fatal error.\n");
+      return ERR;
     } else {
       printf("Error receiving answer from server.\n");
       return INVALID;
@@ -164,6 +180,8 @@ int handleLQR(char *commandArgs[], struct User *user) {
     } else {
       err = 1;
     }
+  } else if (strcmp(commandArgs[0], ERROR) == 0) {
+    err = ERR;
   } else {
     err = 1;
   }
@@ -174,6 +192,12 @@ int handleLQR(char *commandArgs[], struct User *user) {
       memset(user->questions[i], 0, TOPIC_SIZE);
     }
     return INVALID;
+  } else if (err == ERR) {
+    printf("Server reported a fatal error.\n");
+    for (i = 0; i < n_questions + 2; i++) {
+      memset(user->questions[i], 0, TOPIC_SIZE);
+    }
+    return ERR;
   }
 
   for (i = 0; i < n_questions; i++) {
@@ -186,6 +210,246 @@ int handleLQR(char *commandArgs[], struct User *user) {
   }
 
   user->num_questions = n_questions;
+  return VALID;
+}
+
+// QGR qUserID qsize qdata qIMG [qiext qisize qidata]
+// N (AN aUserID asize adata aIMG [aiext aisize aidata])*
+int handleGQR(char *buffer, struct User *user, int tcp_fd) {
+  int qIMG, isize = 0, i, j, status, size = 0;
+  char command[4], qUserID[6], sizeStr[10], ext[4];
+  char /*path[64],*/ dirname[128], filename[128];
+  // int nread;
+  DIR *dir;
+  FILE *fp;
+
+  memset(buffer, 0, BUFFER_SIZE);
+  status = receiveTCP(buffer, 21, tcp_fd);
+  // Read QGR, qUserID, qsize and qdata
+  if (status == ERR) {
+    return ERR;
+  } else if (status == 0) {
+    printf("Couldn't receive message from server.\n");
+    return INVALID;
+  } else {
+    for (i = 0; i < 3; i++)
+      command[i] = buffer[i];
+    command[i] = '\0';
+    if (strcmp(command, GET_QUESTION_RESPONSE) != 0) {
+      printf("Error receiving answer from server\n");
+      return INVALID;
+    }
+    i++;
+    for (; i < 9; i++) {
+      if (buffer[i] == '\n')
+        break;
+      qUserID[i - 4] = buffer[i];
+    }
+    qUserID[i - 4] = '\0';
+
+    // Check if server sent errors
+    if (strcmp(qUserID, END_OF_FILE) == 0) {
+      printf("Question or topic does not exist\n");
+      return INVALID;
+    } else if (strcmp(qUserID, ERROR) == 0) {
+      printf("Error receiving answer from server\n");
+      return ERR;
+    } else if (isnumber(qUserID) == INVALID || strlen(qUserID) != 5) {
+      printf("Error receiving answer from server\n");
+      return INVALID;
+    }
+
+    // Create topic directory
+    strcpy(dirname, user->selected_topic);
+    dir = opendir(dirname);
+    if (dir == NULL) {
+      status = mkdir(dirname, 0700);
+      if (status < 0) {
+        printf("Error creating directory %s.\n", dirname);
+        return INVALID;
+      }
+    }
+
+    i++;
+    for (; i < 20; i++) {
+      if (buffer[i] == ' ') {
+        sizeStr[i - 10] = '\0';
+        break;
+      }
+      sizeStr[i - 10] = buffer[i];
+    }
+    i++;
+    if (isnumber(sizeStr) == INVALID || strlen(sizeStr) > 10) {
+      printf("Error receiving answer from server\n");
+      return INVALID;
+    }
+    for (j = 0; j < strlen(sizeStr); j++) {
+      size *= 10;
+      size += sizeStr[j] - '0';
+    }
+
+    // Create file question.txt
+    strcpy(filename, dirname);
+    strcat(filename, "/");
+    strcat(filename, user->aux_question);
+    strcat(filename, ".txt");
+    fp = fopen(filename, "w");
+    if (fp == NULL) {
+      deleteDir(dirname);
+      printf("Error creating file %s.\n", filename);
+      return INVALID;
+    }
+
+    // Start writing data in file
+    for (; i < 20; i++) {
+      if (size == 0) {
+        buffer[i] = EOF;
+        break;
+      }
+      fputc(buffer[i], fp);
+      size--;
+    }
+  }
+
+  // Read rest of qdata
+  while (size >= BUFFER_SIZE) {
+    memset(buffer, 0, BUFFER_SIZE);
+    status = receiveTCP(buffer, BUFFER_SIZE, tcp_fd);
+    if (status == ERR) {
+      return ERR;
+    } else if (status == 0) {
+      printf("Couldn't receive message from server.\n");
+      return INVALID;
+    } else {
+      for (i = 0; i < BUFFER_SIZE; i++) {
+        fputc(buffer[i], fp);
+      }
+    }
+    size -= BUFFER_SIZE;
+  }
+  if (size > 0) {
+    memset(buffer, 0, BUFFER_SIZE);
+    status = receiveTCP(buffer, size, tcp_fd);
+    if (status == ERR) {
+      return ERR;
+    } else if (status == 0) {
+      printf("Couldn't receive message from server.\n");
+      return INVALID;
+    } else if (size != 0) {
+      for (i = 0; i < size; i++) {
+        fputc(buffer[i], fp);
+      }
+    }
+  }
+  fputc(EOF, fp);
+  fclose(fp);
+
+  // Read image flag
+  memset(buffer, 0, BUFFER_SIZE);
+  status = receiveTCP(buffer, 2, tcp_fd);
+  if (status == ERR) {
+    return ERR;
+  } else if (status == 0) {
+    printf("Couldn't receive message from server.\n");
+    return INVALID;
+  } else if ((buffer[0] != '0' && buffer[0] != '1') || buffer[1] != ' ') {
+    printf("Couldn't receive message from server.\n");
+    return INVALID;
+  } else {
+    qIMG = buffer[0];
+  }
+
+  // Read qiext, qisize and qimage
+  if (qIMG == '1') {
+    memset(buffer, 0, BUFFER_SIZE);
+    status = receiveTCP(buffer, 15, tcp_fd);
+    if (status == ERR) {
+      return ERR;
+    } else if (status == 0) {
+      printf("Couldn't receive message from server.\n");
+      return INVALID;
+    } else {
+      for (i = 0; i < 3; i++)
+        ext[i] = buffer[i];
+      ext[i] = '\0';
+
+      i++;
+      for (; i < 14; i++) {
+        if (buffer[i] == ' ')
+          break;
+        sizeStr[i - 4] = buffer[i];
+      }
+      sizeStr[i - 4] = '\0';
+      i++;
+    }
+    if (isnumber(sizeStr) == INVALID || strlen(sizeStr) > 10) {
+      printf("Error receiving answer from server\n");
+      return INVALID;
+    }
+    for (j = 0; j < strlen(sizeStr); j++) {
+      isize *= 10;
+      isize += sizeStr[j] - '0';
+    }
+
+    // Create file question.ext
+    strcpy(filename, dirname);
+    strcat(filename, "/");
+    strcat(filename, user->aux_question);
+    strcat(filename, ".");
+    strcat(filename, ext);
+    fp = fopen(filename, "w");
+    if (fp == NULL) {
+      deleteDir(dirname);
+      printf("Error creating file %s.\n", filename);
+      return INVALID;
+    }
+
+    printf("ISIZE1: %d.\n", isize);
+    // Start writing data in file
+    for (; i < 15; i++) {
+      if (isize == 0) {
+        buffer[i] = EOF;
+        break;
+      }
+      fputc(buffer[i], fp);
+      isize--;
+    }
+    printf("ISIZE2: %d.\n", isize);
+
+    // Read rest of qidata
+    while (isize >= BUFFER_SIZE) {
+      memset(buffer, 0, BUFFER_SIZE);
+      status = receiveTCP(buffer, BUFFER_SIZE, tcp_fd);
+      if (status == ERR) {
+        return ERR;
+      } else if (status == 0) {
+        printf("Couldn't receive message from server.\n");
+        return INVALID;
+      } else {
+        for (i = 0; i < BUFFER_SIZE; i++) {
+          fputc(buffer[i], fp);
+        }
+      }
+      isize -= BUFFER_SIZE;
+    }
+    if (isize > 0) {
+      memset(buffer, 0, BUFFER_SIZE);
+      status = receiveTCP(buffer, isize, tcp_fd);
+      if (status == ERR) {
+        return ERR;
+      } else if (status == 0) {
+        printf("Couldn't receive message from server.\n");
+        return INVALID;
+      } else if (isize != 0) {
+        for (i = 0; i < isize; i++) {
+          fputc(buffer[i], fp);
+        }
+      }
+    }
+    fputc(EOF, fp);
+    fclose(fp);
+  }
+
   return VALID;
 }
 
@@ -228,7 +492,7 @@ int handleQUR(char *buffer, struct User *user, int tcp_fd) {
                "questions for now.\n",
                user->aux_question, user->selected_topic);
       } else if (strcmp(token, ERROR) == 0) {
-        printf("Error receiving answer from server.\n");
+        printf("Server reported a fatal error.\n");
         return ERR;
       } else {
         printf("Error receiving answer from server.\n");

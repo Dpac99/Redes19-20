@@ -58,7 +58,7 @@ int connectTCP(struct addrinfo *res, struct addrinfo *aux, int *tcp_fd){
   return VALID;
 }
 
-int sendTCP(char *buffer, int tcp_fd){
+int sendTCPText(char *buffer, int tcp_fd){
   int fd = tcp_fd;
   int nbytes, nleft, nwritten;
   char *ptr = buffer;
@@ -69,7 +69,7 @@ int sendTCP(char *buffer, int tcp_fd){
   while(nleft > 0){
     nwritten=write(fd, ptr, nleft);
     if(nwritten <= 0){
-      close(fd);
+      //close(fd);
       return ERR;
     }
     nleft -= nwritten;
