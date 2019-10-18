@@ -226,16 +226,15 @@ int handleLQR(char *commandArgs[], struct User *user){
 // QGR qUserID qsize qdata qIMG [qiext qisize qidata]
 // N (AN aUserID asize adata aIMG [aiext aisize aidata])*
 int handleGQR(char *buffer, struct User *user, int tcp_fd) {
-	int qIMG, isize = 0, i, j, status, size = 0;
-	char command[4], qUserID[6], sizeStr[10], ext[4];
-	char /*path[64],*/ dirname[128], filename[128];
-	// int nread;
-	DIR *dir;
-	FILE *fp;
+	int i, status, numAnswers = 0;
+	char command[4];
+	char *an = (char*)malloc(4*sizeof(char));
 
-	memset(buffer, 0, BUFFER_SIZE);
-	status = receiveTCP(buffer, 21, tcp_fd);
+	strcpy(an, "");
+
 	// Read QGR, qUserID, qsize and qdata 
+	memset(buffer, 0, BUFFER_SIZE);
+	status = receiveTCP(buffer, 4, tcp_fd);
 	if (status == ERR) {
 		return ERR;
 	} else if (status == 0) {
@@ -249,13 +248,103 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 			printf("Error receiving answer from server\n");
 			return INVALID;
 		}
-		i++;
-		for (; i < 9; i++) {
-			if (buffer[i] == '\n')
-				break;
-			qUserID[i-4] = buffer[i];
+	}
+	status = handleGQRAux(buffer, user, tcp_fd, an);
+	if (status != VALID)
+		return status;
+
+	// Ignore space
+	memset(buffer, 0, BUFFER_SIZE);
+	status = receiveTCP(buffer, 1, tcp_fd);
+	if (status == ERR) {
+		return ERR;
+	} else if (status == 0) {
+		printf("Couldn't receive message from server.\n");
+		return INVALID;
+	}
+
+	// Read N
+	memset(buffer, 0, BUFFER_SIZE);
+	status = receiveTCP(buffer, 2, tcp_fd);
+	if (buffer[1] == '\n') 
+		buffer[1] = '\0';
+	if (status == ERR) {
+		return ERR;
+	} else if (status == 0) {
+		printf("Couldn't receive message from server.\n");
+		return INVALID;
+	} else {
+		if (isnumber(buffer) == INVALID) {
+			printf("Error receiving answer from server\n");
+			return INVALID;
 		}
-		qUserID[i-4] = '\0';
+		for (i = 0; i < strlen(buffer); i++) {
+			numAnswers *= 10;
+			numAnswers += buffer[i] - '0';
+		}
+	}
+	if (numAnswers > 10 || numAnswers < 0) {
+		printf("Error receiving answer from server\n");
+		return INVALID;
+	}
+
+	if (numAnswers == 10) {
+		// Ignore space
+		memset(buffer, 0, BUFFER_SIZE);
+		status = receiveTCP(buffer, 1, tcp_fd);
+		if (status == ERR) {
+			return ERR;
+		} else if (status == 0) {
+			printf("Couldn't receive message from server.\n");
+			return INVALID;
+		}
+	}
+	// Read files for each answer
+	if (numAnswers != 0) {
+		for (i = 0; i < numAnswers; i ++) {
+			memset(buffer, 0, BUFFER_SIZE);
+			status = receiveTCP(buffer, 3, tcp_fd);
+			if (status == ERR) {
+				return ERR;
+			} else if (status == 0) {
+				printf("Couldn't receive message from server.\n");
+				return INVALID;
+			} else {
+				buffer[2] = '\0';	// Remove the space
+				strcpy(an, "_");
+				strcat(an, buffer);
+				status = handleGQRAux(buffer, user, tcp_fd, an);
+				if (status != VALID)
+					return status;
+			}
+		}
+	}
+
+	return VALID;
+}
+
+int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra) {
+	int qIMG, isize = 0, i, j, status, size = 0;
+	char qUserID[6], sizeStr[10], ext[4];
+	char dirname[128], filename[128];
+	DIR *dir;
+	FILE *fp;
+
+	memset(buffer, 0, BUFFER_SIZE);
+	status = receiveTCP(buffer, 17, tcp_fd);
+	// Read QGR, qUserID, qsize and qdata 
+	if (status == ERR) {
+		return ERR;
+	} else if (status == 0) {
+		printf("Couldn't receive message from server.\n");
+		return INVALID;
+	} else {
+		for (i = 0; i < 5; i++) {
+			if (buffer[i] == ' ')
+				break;
+			qUserID[i] = buffer[i];
+		}
+		qUserID[i] = '\0';
 
 		// Check if server sent errors
 		if (strcmp(qUserID, END_OF_FILE) == 0) {
@@ -281,12 +370,12 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 		}
 
 		i++;
-		for (; i < 20; i++) {
+		for (; i < 16; i++) {
 			if (buffer[i] == ' ') {
-				sizeStr[i-10] = '\0';	
+				sizeStr[i-6] = '\0';	
 				break;
 			}
-			sizeStr[i-10] = buffer[i];
+			sizeStr[i-6] = buffer[i];
 		}
 		i++;
 		if (isnumber(sizeStr) == INVALID || strlen(sizeStr) > 10) {
@@ -302,6 +391,7 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 		strcpy(filename, dirname);
 		strcat(filename, "/");
 		strcat(filename, user->aux_question);
+		strcat(filename, extra);
 		strcat(filename, ".txt");
 		fp = fopen(filename, "w");
 		if (fp == NULL) {
@@ -311,7 +401,7 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 		}
 
 		// Start writing data in file
-		for (; i < 20; i++) {
+		for (; i < 17; i++) {
 			if (size == 0) {
 				buffer[i] = EOF;
 				break;
@@ -351,22 +441,22 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 			}
 		}
 	}
-	fputc(EOF, fp);
+	fputc('\0', fp);
 	fclose(fp);
 
 	// Read image flag
 	memset(buffer, 0, BUFFER_SIZE);
-	status = receiveTCP(buffer, 2, tcp_fd);
+	status = receiveTCP(buffer, 3, tcp_fd);
 	if (status == ERR) {
 		return ERR;
 	} else if (status == 0) {
 		printf("Couldn't receive message from server.\n");
 		return INVALID;
-	} else if ((buffer[0] != '0' && buffer[0] != '1') || buffer[1] != ' '){
+	} else if (buffer[0] != ' '  || (buffer[1] != '0' && buffer[1] != '1') || buffer[2] != ' '){
 		printf("Couldn't receive message from server.\n");
 		return INVALID;
 	} else {
-		qIMG = buffer[0];
+		qIMG = buffer[1];
 	}
 
 	// Read qiext, qisize and qimage
@@ -405,6 +495,7 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 		strcpy(filename, dirname);
 		strcat(filename, "/");
 		strcat(filename, user->aux_question);
+		strcat(filename, extra);
 		strcat(filename, ".");
 		strcat(filename, ext);
 		fp = fopen(filename, "w");
@@ -414,7 +505,6 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 			return INVALID;
 		}
 
-		printf("ISIZE1: %d.\n", isize);
 		// Start writing data in file
 		for (; i < 15; i++) {
 			if (isize == 0) {
@@ -424,7 +514,6 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 			fputc(buffer[i], fp);
 			isize--;
 		}
-		printf("ISIZE2: %d.\n", isize);
 		
 		// Read rest of qidata
 		while (isize >= BUFFER_SIZE) {
