@@ -9,9 +9,9 @@ int max(int x, int y) {
 
 int comparator(const void *p, const void *q) {
   char p_c[32], q_c[32];
-  struct stat p_s = {0}, q_s = {0};
-  sprintf(p_c, "%s/%s", TOPICS, (char *)p);
-  sprintf(q_c, "%s/%s", TOPICS, (char *)q);
+  struct stat p_s, q_s;
+  sprintf(p_c, "%s", (char *)p);
+  sprintf(q_c, "%s", (char *)q);
   stat(p_c, &p_s);
   stat(q_c, &q_s);
 
