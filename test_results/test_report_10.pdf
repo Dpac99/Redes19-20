@@ -1,0 +1,642 @@
+
+<!-- saved from url=(0079)http://193.136.138.142:58000/index.html?IP=193.136.128.108&PORT=58053&SCRIPT=10 -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Test report</title><script data-dapp-detection="">
+(function() {
+  let alreadyInsertedMetaTag = false
+
+  function __insertDappDetected() {
+    if (!alreadyInsertedMetaTag) {
+      const meta = document.createElement('meta')
+      meta.name = 'dapp-detected'
+      document.head.appendChild(meta)
+      alreadyInsertedMetaTag = true
+    }
+  }
+
+  if (window.hasOwnProperty('web3')) {
+    // Note a closure can't be used for this var because some sites like
+    // www.wnyc.org do a second script execution via eval for some reason.
+    window.__disableDappDetectionInsertion = true
+    // Likely oldWeb3 is undefined and it has a property only because
+    // we defined it. Some sites like wnyc.org are evaling all scripts
+    // that exist again, so this is protection against multiple calls.
+    if (window.web3 === undefined) {
+      return
+    }
+    if (!window.web3.currentProvider ||
+        !window.web3.currentProvider.isMetaMask) {
+      __insertDappDetected()
+    }
+  } else {
+    var oldWeb3 = window.web3
+    Object.defineProperty(window, 'web3', {
+      configurable: true,
+      set: function (val) {
+        if (!window.__disableDappDetectionInsertion)
+          __insertDappDetected()
+        oldWeb3 = val
+      },
+      get: function () {
+        if (!window.__disableDappDetectionInsertion)
+          __insertDappDetected()
+        return oldWeb3
+      }
+    })
+  }
+})()</script></head><body><center><font size="10" color="blue"> --------- TEST RESULTS --------- </font></center><br>---------------------------
+<br>
+<br>COMMAND: tl
+<br>Topic  1: IPnetwork1 by user: 12345
+<br>Topic  2: IPnetwork2 by user: 12345
+<br>Topic  3: IPnetwork3 by user: 12345
+<br>Topic  4: IPnetwork4 by user: 12345
+<br>Topic  5: IPnetwork5 by user: 12345
+<br>Topic  6: IPnetwork6 by user: 12345
+<br>Topic  7: IPnetwork7 by user: 12345
+<br>Topic  8: IPnetwork8 by user: 12345
+<br>Topic  9: IPnetwork9 by user: 12345
+<br>Topic 10: IPnetworkA by user: 12345
+<br>Topic 11: IPnetworkB by user: 12345
+<br>Topic 12: IPnetworkC by user: 12345
+<br>Topic 13: IPnetworkD by user: 12345
+<br>Topic 14: IPnetworkE by user: 12345
+<br>Topic 15: IPnetworkF by user: 12345
+<br>Topic 16: IPnetworkG by user: 12345
+<br>Topic 17: IPnetworkH by user: 12345
+<br>Topic 18: IPnetworkI by user: 12345
+<br>Topic 19: IPnetworkJ by user: 12345
+<br>Topic 20: IPnetworkK by user: 12345
+<br>Topic 21:        IOT by user: 77777
+<br>---------------------------
+<br>
+<br>COMMAND: topic_select IOT
+<br>Selecting topic: IOT
+<br>---------------------------
+<br>
+<br>COMMAND: ql
+<br>Listing questions for topic IOT:
+<br>
+<br>Question  1:       IOT1 by user: 77777 with 0 answers
+<br>Question  2:       IOT2 by user: 77777 with 10 answers
+<br>Question  3:       IOT3 by user: 77777 with 10 answers
+<br>Question  4:       IOT4 by user: 77777 with 10 answers
+<br>Question  5:       IOT5 by user: 77777 with 5 answers
+<br>---------------------------
+<br>
+<br>COMMAND: question_get IOT1
+<br>Question IOT1 by user 77777 - files downloaded
+<br>No answers found for this question:
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_question.txt IOT/IOT1.txt
+<br>
+<br>Perfect match between files of size = 33
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp question_mark.jpg IOT/IOT1.jpg
+<br>
+<br>Perfect match between files of size = 119721
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: question_get IOT2
+<br>Question IOT2 by user 77777 - files downloaded
+<br>10 answers found for this question:
+<br>
+<br>    Retrieving answer IOT2_10 by user 77777
+<br>
+<br>    Retrieving answer IOT2_09 by user 77777
+<br>
+<br>    Retrieving answer IOT2_08 by user 77777
+<br>
+<br>    Retrieving answer IOT2_07 by user 77777
+<br>
+<br>    Retrieving answer IOT2_06 by user 77777
+<br>
+<br>    Retrieving answer IOT2_05 by user 77777
+<br>
+<br>    Retrieving answer IOT2_04 by user 77777
+<br>
+<br>    Retrieving answer IOT2_03 by user 77777
+<br>
+<br>    Retrieving answer IOT2_02 by user 77777
+<br>
+<br>    Retrieving answer IOT2_01 by user 77777
+<br>Operation successful. Files stored in dir 27832
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_question.txt IOT/IOT2.txt
+<br>
+<br>Perfect match between files of size = 33
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp question_mark.jpg IOT/IOT2.jpg
+<br>
+<br>Perfect match between files of size = 119721
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT2_01.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT2_02.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT2_03.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT2_04.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT2_05.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT2_06.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT2_07.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT2_08.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT2_09.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT2_10.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: question_get IOT3
+<br>Question IOT3 by user 77777 - files downloaded
+<br>10 answers found for this question:
+<br>
+<br>    Retrieving answer IOT3_10 by user 77777
+<br>    Answer IOT3_10 contains an image
+<br>
+<br>    Retrieving answer IOT3_09 by user 77777
+<br>    Answer IOT3_09 contains an image
+<br>
+<br>    Retrieving answer IOT3_08 by user 77777
+<br>    Answer IOT3_08 contains an image
+<br>
+<br>    Retrieving answer IOT3_07 by user 77777
+<br>    Answer IOT3_07 contains an image
+<br>
+<br>    Retrieving answer IOT3_06 by user 77777
+<br>    Answer IOT3_06 contains an image
+<br>
+<br>    Retrieving answer IOT3_05 by user 77777
+<br>    Answer IOT3_05 contains an image
+<br>
+<br>    Retrieving answer IOT3_04 by user 77777
+<br>    Answer IOT3_04 contains an image
+<br>
+<br>    Retrieving answer IOT3_03 by user 77777
+<br>    Answer IOT3_03 contains an image
+<br>
+<br>    Retrieving answer IOT3_02 by user 77777
+<br>    Answer IOT3_02 contains an image
+<br>
+<br>    Retrieving answer IOT3_01 by user 77777
+<br>    Answer IOT3_01 contains an image
+<br>Operation successful. Files stored in dir 27832
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_question.txt IOT/IOT3.txt
+<br>
+<br>Perfect match between files of size = 33
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp question_mark.jpg IOT/IOT3.jpg
+<br>
+<br>Perfect match between files of size = 119721
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT3_01.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT3_01.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT3_02.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT3_02.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT3_03.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT3_03.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT3_04.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT3_04.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT3_05.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT3_05.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT3_06.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT3_06.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT3_07.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT3_07.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT3_08.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT3_08.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT3_09.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT3_09.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT3_10.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT3_10.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: question_get IOT4
+<br>Question IOT4 by user 77777 - files downloaded
+<br>10 answers found for this question:
+<br>
+<br>    Retrieving answer IOT4_10 by user 77777
+<br>
+<br>    Retrieving answer IOT4_09 by user 77777
+<br>    Answer IOT4_09 contains an image
+<br>
+<br>    Retrieving answer IOT4_08 by user 77777
+<br>
+<br>    Retrieving answer IOT4_07 by user 77777
+<br>    Answer IOT4_07 contains an image
+<br>
+<br>    Retrieving answer IOT4_06 by user 77777
+<br>
+<br>    Retrieving answer IOT4_05 by user 77777
+<br>    Answer IOT4_05 contains an image
+<br>
+<br>    Retrieving answer IOT4_04 by user 77777
+<br>
+<br>    Retrieving answer IOT4_03 by user 77777
+<br>    Answer IOT4_03 contains an image
+<br>
+<br>    Retrieving answer IOT4_02 by user 77777
+<br>
+<br>    Retrieving answer IOT4_01 by user 77777
+<br>    Answer IOT4_01 contains an image
+<br>Operation successful. Files stored in dir 27832
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_question.txt IOT/IOT4.txt
+<br>
+<br>Perfect match between files of size = 33
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp question_mark.jpg IOT/IOT4.jpg
+<br>
+<br>Perfect match between files of size = 119721
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT4_01.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT4_01.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT4_02.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT4_03.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT4_03.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT4_04.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT4_05.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT4_05.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT4_06.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT4_07.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT4_07.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT4_08.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT4_09.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT4_09.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT4_10.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: question_get IOT5
+<br>Question IOT5 by user 77777 - files downloaded
+<br>5 answers found for this question:
+<br>
+<br>    Retrieving answer IOT5_05 by user 77777
+<br>    Answer IOT5_05 contains an image
+<br>
+<br>    Retrieving answer IOT5_04 by user 77777
+<br>    Answer IOT5_04 contains an image
+<br>
+<br>    Retrieving answer IOT5_03 by user 77777
+<br>    Answer IOT5_03 contains an image
+<br>
+<br>    Retrieving answer IOT5_02 by user 77777
+<br>    Answer IOT5_02 contains an image
+<br>
+<br>    Retrieving answer IOT5_01 by user 77777
+<br>    Answer IOT5_01 contains an image
+<br>Operation successful. Files stored in dir 27832
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_question.txt IOT/IOT5.txt
+<br>
+<br>Perfect match between files of size = 33
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp img1byte.FIG IOT/IOT5.FIG
+<br>
+<br>Perfect match between files of size = 1
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp txt1byteI.txt IOT/IOT5_01.txt
+<br>
+<br>Perfect match between files of size = 1
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT5_01.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT5_02.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp img1byte.FIG IOT/IOT5_02.FIG
+<br>
+<br>Perfect match between files of size = 1
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp txt1byteO.txt IOT/IOT5_03.txt
+<br>
+<br>Perfect match between files of size = 1
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT5_03.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.txt IOT/IOT5_04.txt
+<br>
+<br>Perfect match between files of size = 1088
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp img1byte.FIG IOT/IOT5_04.FIG
+<br>
+<br>Perfect match between files of size = 1
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp txt1byteT.txt IOT/IOT5_05.txt
+<br>
+<br>Perfect match between files of size = 1
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: pidcomp IOT_ans1.png IOT/IOT5_05.png
+<br>
+<br>Perfect match between files of size = 156966
+<br>
+<br>---------------------------
+<br>
+<br>COMMAND: exit
+<br>
+<br>MSGLOG.txt follows:
+<br>
+<br>UDPC:LTP$UDPS:LTR 21 IPnetwork1:12345 IPnetwork2:12345 IPnetwork3:12345 IPnetwor
+<br>k4:12345 IPnetwork5:12345 IPnetwork6:12345 IPnetwork7:12345 IPnetwork8:12345 IPn
+<br>etwork9:12345 IPnetworkA:12345 IPnetworkB:12345 IPnetworkC:12345 IPnetworkD:1234
+<br>5 IPnetworkE:12345 IPnetworkF:12345 IPnetworkG:12345 IPnetworkH:12345 IPnetworkI
+<br>:12345 IPnetworkJ:12345 IPnetworkK:12345 IOT:77777$UDPC:LQU IOT$UDPS:LQR 5 IOT1:
+<br>77777:0 IOT2:77777:10 IOT3:77777:10 IOT4:77777:10 IOT5:77777:5$TCPC:GQU IOT IOT1
+<br>$TCPS:QGR 77777 33 [&lt;-- 33 bytes of data &lt;--] 1 jpg 119721 [&lt;-- 119721 bytes of 
+<br>data &lt;--] 0$TCPC:GQU IOT IOT2$TCPS:QGR 77777 33 [&lt;-- 33 bytes of data &lt;--] 1 jpg
+<br> 119721 [&lt;-- 119721 bytes of data &lt;--] 10 10 77777 1088 [&lt;-- 1088 bytes of data 
+<br>&lt;--] 0 09 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 0 08 77777 1088 [&lt;-- 1088 byte
+<br>s of data &lt;--] 0 07 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 0 06 77777 1088 [&lt;--
+<br> 1088 bytes of data &lt;--] 0 05 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 0 04 77777
+<br> 1088 [&lt;-- 1088 bytes of data &lt;--] 0 03 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 
+<br>0 02 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 0 01 77777 1088 [&lt;-- 1088 bytes of 
+<br>data &lt;--] 0$TCPC:GQU IOT IOT3$TCPS:QGR 77777 33 [&lt;-- 33 bytes of data &lt;--] 1 jpg
+<br> 119721 [&lt;-- 119721 bytes of data &lt;--] 10 10 77777 1088 [&lt;-- 1088 bytes of data 
+<br>&lt;--] 1 png 156966 [&lt;-- 156966 bytes of data &lt;--] 09 77777 1088 [&lt;-- 1088 bytes o
+<br>f data &lt;--] 1 png 156966 [&lt;-- 156966 bytes of data &lt;--] 08 77777 1088 [&lt;-- 1088 
+<br>bytes of data &lt;--] 1 png 156966 [&lt;-- 156966 bytes of data &lt;--] 07 77777 1088 [&lt;-
+<br>- 1088 bytes of data &lt;--] 1 png 156966 [&lt;-- 156966 bytes of data &lt;--] 06 77777 1
+<br>088 [&lt;-- 1088 bytes of data &lt;--] 1 png 156966 [&lt;-- 156966 bytes of data &lt;--] 05 
+<br>77777 1088 [&lt;-- 1088 bytes of data &lt;--] 1 png 156966 [&lt;-- 156966 bytes of data &lt;
+<br>--] 04 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 1 png 156966 [&lt;-- 156966 bytes of
+<br> data &lt;--] 03 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 1 png 156966 [&lt;-- 156966 b
+<br>ytes of data &lt;--] 02 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 1 png 156966 [&lt;-- 1
+<br>56966 bytes of data &lt;--] 01 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 1 png 156966
+<br> [&lt;-- 156966 bytes of data &lt;--]$TCPC:GQU IOT IOT4$TCPS:QGR 77777 33 [&lt;-- 33 byte
+<br>s of data &lt;--] 1 jpg 119721 [&lt;-- 119721 bytes of data &lt;--] 10 10 77777 1088 [&lt;--
+<br> 1088 bytes of data &lt;--] 0 09 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 1 png 1569
+<br>66 [&lt;-- 156966 bytes of data &lt;--] 08 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 0 0
+<br>7 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 1 png 156966 [&lt;-- 156966 bytes of data
+<br> &lt;--] 06 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 0 05 77777 1088 [&lt;-- 1088 bytes
+<br> of data &lt;--] 1 png 156966 [&lt;-- 156966 bytes of data &lt;--] 04 77777 1088 [&lt;-- 108
+<br>8 bytes of data &lt;--] 0 03 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 1 png 156966 [
+<br>&lt;-- 156966 bytes of data &lt;--] 02 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 0 01 77
+<br>777 1088 [&lt;-- 1088 bytes of data &lt;--] 1 png 156966 [&lt;-- 156966 bytes of data &lt;--
+<br>]$TCPC:GQU IOT IOT5$TCPS:QGR 77777 33 [&lt;-- 33 bytes of data &lt;--] 1 FIG 1 [&lt;-- 1 
+<br>bytes of data &lt;--] 5 05 77777 1 [&lt;-- 1 bytes of data &lt;--] 1 png 156966 [&lt;-- 1569
+<br>66 bytes of data &lt;--] 04 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 1 FIG 1 [&lt;-- 1 
+<br>bytes of data &lt;--] 03 77777 1 [&lt;-- 1 bytes of data &lt;--] 1 png 156966 [&lt;-- 156966
+<br> bytes of data &lt;--] 02 77777 1088 [&lt;-- 1088 bytes of data &lt;--] 1 FIG 1 [&lt;-- 1 by
+<br>tes of data &lt;--] 01 77777 1 [&lt;-- 1 bytes of data &lt;--] 1 png 156966 [&lt;-- 156966 b
+<br>ytes of data &lt;--]$
+<br></body></html>

@@ -1,0 +1,102 @@
+
+<!-- saved from url=(0078)http://193.136.138.142:58000/index.html?IP=193.136.128.108&PORT=58053&SCRIPT=6 -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Test report</title><script data-dapp-detection="">
+(function() {
+  let alreadyInsertedMetaTag = false
+
+  function __insertDappDetected() {
+    if (!alreadyInsertedMetaTag) {
+      const meta = document.createElement('meta')
+      meta.name = 'dapp-detected'
+      document.head.appendChild(meta)
+      alreadyInsertedMetaTag = true
+    }
+  }
+
+  if (window.hasOwnProperty('web3')) {
+    // Note a closure can't be used for this var because some sites like
+    // www.wnyc.org do a second script execution via eval for some reason.
+    window.__disableDappDetectionInsertion = true
+    // Likely oldWeb3 is undefined and it has a property only because
+    // we defined it. Some sites like wnyc.org are evaling all scripts
+    // that exist again, so this is protection against multiple calls.
+    if (window.web3 === undefined) {
+      return
+    }
+    if (!window.web3.currentProvider ||
+        !window.web3.currentProvider.isMetaMask) {
+      __insertDappDetected()
+    }
+  } else {
+    var oldWeb3 = window.web3
+    Object.defineProperty(window, 'web3', {
+      configurable: true,
+      set: function (val) {
+        if (!window.__disableDappDetectionInsertion)
+          __insertDappDetected()
+        oldWeb3 = val
+      },
+      get: function () {
+        if (!window.__disableDappDetectionInsertion)
+          __insertDappDetected()
+        return oldWeb3
+      }
+    })
+  }
+})()</script></head><body><center><font size="10" color="blue"> --------- TEST RESULTS --------- </font></center><br>---------------------------
+<br>
+<br>COMMAND: register 56789
+<br>Register success
+<br>---------------------------
+<br>
+<br>COMMAND: topic_list
+<br>Topic  1: IPnetwork1 by user: 12345
+<br>Topic  2: IPnetwork2 by user: 12345
+<br>Topic  3: IPnetwork3 by user: 12345
+<br>Topic  4: IPnetwork4 by user: 12345
+<br>Topic  5: IPnetwork5 by user: 12345
+<br>Topic  6: IPnetwork6 by user: 12345
+<br>Topic  7: IPnetwork7 by user: 12345
+<br>Topic  8: IPnetwork8 by user: 12345
+<br>Topic  9: IPnetwork9 by user: 12345
+<br>Topic 10: IPnetworkA by user: 12345
+<br>Topic 11: IPnetworkB by user: 12345
+<br>Topic 12: IPnetworkC by user: 12345
+<br>Topic 13: IPnetworkD by user: 12345
+<br>Topic 14: IPnetworkE by user: 12345
+<br>Topic 15: IPnetworkF by user: 12345
+<br>Topic 16: IPnetworkG by user: 12345
+<br>Topic 17: IPnetworkH by user: 12345
+<br>Topic 18: IPnetworkI by user: 12345
+<br>Topic 19: IPnetworkJ by user: 12345
+<br>Topic 20: IPnetworkK by user: 12345
+<br>---------------------------
+<br>
+<br>COMMAND: topic_select IPnetwork7
+<br>Selecting topic: IPnetwork7
+<br>---------------------------
+<br>
+<br>COMMAND: question_submit anewquesta question question_mark.jpg
+<br>Data sent
+<br>Operation completed
+<br>---------------------------
+<br>
+<br>COMMAND: question_list
+<br>Listing questions for topic IPnetwork7:
+<br>
+<br>Question  1: anewquesta by user: 56789 with 0 answers
+<br>---------------------------
+<br>
+<br>COMMAND: exit
+<br>
+<br>MSGLOG.txt follows:
+<br>
+<br>UDPC:REG 56789$UDPS:RGR OK$UDPC:LTP$UDPS:LTR 20 IPnetwork1:12345 IPnetwork2:1234
+<br>5 IPnetwork3:12345 IPnetwork4:12345 IPnetwork5:12345 IPnetwork6:12345 IPnetwork7
+<br>:12345 IPnetwork8:12345 IPnetwork9:12345 IPnetworkA:12345 IPnetworkB:12345 IPnet
+<br>workC:12345 IPnetworkD:12345 IPnetworkE:12345 IPnetworkF:12345 IPnetworkG:12345 
+<br>IPnetworkH:12345 IPnetworkI:12345 IPnetworkJ:12345 IPnetworkK:12345$TCPC:QUS 567
+<br>89 IPnetwork7 anewquesta 1041 [--&gt; 1041 bytes of data --&gt;] 1 jpg 119721 [--&gt; 119
+<br>721 bytes of data --&gt;]$TCPS:QUR OK$UDPC:LQU IPnetwork7$UDPS:LQR 1 anewquesta:567
+<br>89:0$
+<br></body></html>
