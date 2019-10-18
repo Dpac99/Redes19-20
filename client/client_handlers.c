@@ -216,241 +216,330 @@ int handleLQR(char *commandArgs[], struct User *user) {
 // QGR qUserID qsize qdata qIMG [qiext qisize qidata]
 // N (AN aUserID asize adata aIMG [aiext aisize aidata])*
 int handleGQR(char *buffer, struct User *user, int tcp_fd) {
-  int qIMG, isize = 0, i, j, status, size = 0;
-  char command[4], qUserID[6], sizeStr[10], ext[4];
-  char /*path[64],*/ dirname[128], filename[128];
-  // int nread;
-  DIR *dir;
-  FILE *fp;
+	int i, status, numAnswers = 0;
+	char command[4];
+	char *an = (char*)malloc(4*sizeof(char));
 
-  memset(buffer, 0, BUFFER_SIZE);
-  status = receiveTCP(buffer, 21, tcp_fd);
-  // Read QGR, qUserID, qsize and qdata
-  if (status == ERR) {
-    return ERR;
-  } else if (status == 0) {
-    printf("Couldn't receive message from server.\n");
-    return INVALID;
-  } else {
-    for (i = 0; i < 3; i++)
-      command[i] = buffer[i];
-    command[i] = '\0';
-    if (strcmp(command, GET_QUESTION_RESPONSE) != 0) {
-      printf("Error receiving answer from server\n");
-      return INVALID;
-    }
-    i++;
-    for (; i < 9; i++) {
-      if (buffer[i] == '\n')
-        break;
-      qUserID[i - 4] = buffer[i];
-    }
-    qUserID[i - 4] = '\0';
+	strcpy(an, "");
 
-    // Check if server sent errors
-    if (strcmp(qUserID, END_OF_FILE) == 0) {
-      printf("Question or topic does not exist\n");
-      return INVALID;
-    } else if (strcmp(qUserID, ERROR) == 0) {
-      printf("Error receiving answer from server\n");
-      return ERR;
-    } else if (isnumber(qUserID) == INVALID || strlen(qUserID) != 5) {
-      printf("Error receiving answer from server\n");
-      return INVALID;
-    }
+	// Read QGR, qUserID, qsize and qdata 
+	memset(buffer, 0, BUFFER_SIZE);
+	status = receiveTCP(buffer, 4, tcp_fd);
+	if (status == ERR) {
+		return ERR;
+	} else if (status == 0) {
+		printf("Couldn't receive message from server.\n");
+		return INVALID;
+	} else {
+		for (i = 0; i < 3; i++)
+			command[i] = buffer[i];
+		command[i] = '\0';
+		if (strcmp(command, GET_QUESTION_RESPONSE) != 0) {
+			printf("Error receiving answer from server\n");
+			return INVALID;
+		}
+	}
+	status = handleGQRAux(buffer, user, tcp_fd, an);
+	if (status != VALID)
+		return status;
 
-    // Create topic directory
-    strcpy(dirname, user->selected_topic);
-    dir = opendir(dirname);
-    if (dir == NULL) {
-      status = mkdir(dirname, 0700);
-      if (status < 0) {
-        printf("Error creating directory %s.\n", dirname);
-        return INVALID;
-      }
-    }
+	// Ignore space
+	memset(buffer, 0, BUFFER_SIZE);
+	status = receiveTCP(buffer, 1, tcp_fd);
+	if (status == ERR) {
+		return ERR;
+	} else if (status == 0) {
+		printf("Couldn't receive message from server.\n");
+		return INVALID;
+	}
 
-    i++;
-    for (; i < 20; i++) {
-      if (buffer[i] == ' ') {
-        sizeStr[i - 10] = '\0';
-        break;
-      }
-      sizeStr[i - 10] = buffer[i];
-    }
-    i++;
-    if (isnumber(sizeStr) == INVALID || strlen(sizeStr) > 10) {
-      printf("Error receiving answer from server\n");
-      return INVALID;
-    }
-    for (j = 0; j < strlen(sizeStr); j++) {
-      size *= 10;
-      size += sizeStr[j] - '0';
-    }
+	// Read N
+	memset(buffer, 0, BUFFER_SIZE);
+	status = receiveTCP(buffer, 2, tcp_fd);
+	if (buffer[1] == '\n') 
+		buffer[1] = '\0';
+	if (status == ERR) {
+		return ERR;
+	} else if (status == 0) {
+		printf("Couldn't receive message from server.\n");
+		return INVALID;
+	} else {
+		if (isnumber(buffer) == INVALID) {
+			printf("Error receiving answer from server\n");
+			return INVALID;
+		}
+		for (i = 0; i < strlen(buffer); i++) {
+			numAnswers *= 10;
+			numAnswers += buffer[i] - '0';
+		}
+	}
+	if (numAnswers > 10 || numAnswers < 0) {
+		printf("Error receiving answer from server\n");
+		return INVALID;
+	}
 
-    // Create file question.txt
-    strcpy(filename, dirname);
-    strcat(filename, "/");
-    strcat(filename, user->aux_question);
-    strcat(filename, ".txt");
-    fp = fopen(filename, "w");
-    if (fp == NULL) {
-      deleteDir(dirname);
-      printf("Error creating file %s.\n", filename);
-      return INVALID;
-    }
+	if (numAnswers == 10) {
+		// Ignore space
+		memset(buffer, 0, BUFFER_SIZE);
+		status = receiveTCP(buffer, 1, tcp_fd);
+		if (status == ERR) {
+			return ERR;
+		} else if (status == 0) {
+			printf("Couldn't receive message from server.\n");
+			return INVALID;
+		}
+	}
+	// Read files for each answer
+	if (numAnswers != 0) {
+		for (i = 0; i < numAnswers; i ++) {
+			memset(buffer, 0, BUFFER_SIZE);
+			status = receiveTCP(buffer, 3, tcp_fd);
+			if (status == ERR) {
+				return ERR;
+			} else if (status == 0) {
+				printf("Couldn't receive message from server.\n");
+				return INVALID;
+			} else {
+				buffer[2] = '\0';	// Remove the space
+				strcpy(an, "_");
+				strcat(an, buffer);
+				status = handleGQRAux(buffer, user, tcp_fd, an);
+				if (status != VALID)
+					return status;
+			}
+		}
+	}
 
-    // Start writing data in file
-    for (; i < 20; i++) {
-      if (size == 0) {
-        buffer[i] = EOF;
-        break;
-      }
-      fputc(buffer[i], fp);
-      size--;
-    }
-  }
+	return VALID;
+}
 
-  // Read rest of qdata
-  while (size >= BUFFER_SIZE) {
-    memset(buffer, 0, BUFFER_SIZE);
-    status = receiveTCP(buffer, BUFFER_SIZE, tcp_fd);
-    if (status == ERR) {
-      return ERR;
-    } else if (status == 0) {
-      printf("Couldn't receive message from server.\n");
-      return INVALID;
-    } else {
-      for (i = 0; i < BUFFER_SIZE; i++) {
-        fputc(buffer[i], fp);
-      }
-    }
-    size -= BUFFER_SIZE;
-  }
-  if (size > 0) {
-    memset(buffer, 0, BUFFER_SIZE);
-    status = receiveTCP(buffer, size, tcp_fd);
-    if (status == ERR) {
-      return ERR;
-    } else if (status == 0) {
-      printf("Couldn't receive message from server.\n");
-      return INVALID;
-    } else if (size != 0) {
-      for (i = 0; i < size; i++) {
-        fputc(buffer[i], fp);
-      }
-    }
-  }
-  fputc(EOF, fp);
-  fclose(fp);
+int handleGQRAux(char *buffer, struct User* user, int tcp_fd, char *extra) {
+	int qIMG, isize = 0, i, j, status, size = 0;
+	char qUserID[6], sizeStr[10], ext[4];
+	char dirname[128], filename[128];
+	DIR *dir;
+	FILE *fp;
 
-  // Read image flag
-  memset(buffer, 0, BUFFER_SIZE);
-  status = receiveTCP(buffer, 2, tcp_fd);
-  if (status == ERR) {
-    return ERR;
-  } else if (status == 0) {
-    printf("Couldn't receive message from server.\n");
-    return INVALID;
-  } else if ((buffer[0] != '0' && buffer[0] != '1') || buffer[1] != ' ') {
-    printf("Couldn't receive message from server.\n");
-    return INVALID;
-  } else {
-    qIMG = buffer[0];
-  }
+	memset(buffer, 0, BUFFER_SIZE);
+	status = receiveTCP(buffer, 17, tcp_fd);
+	// Read QGR, qUserID, qsize and qdata 
+	if (status == ERR) {
+		return ERR;
+	} else if (status == 0) {
+		printf("Couldn't receive message from server.\n");
+		return INVALID;
+	} else {
+		for (i = 0; i < 5; i++) {
+			if (buffer[i] == ' ')
+				break;
+			qUserID[i] = buffer[i];
+		}
+		qUserID[i] = '\0';
 
-  // Read qiext, qisize and qimage
-  if (qIMG == '1') {
-    memset(buffer, 0, BUFFER_SIZE);
-    status = receiveTCP(buffer, 15, tcp_fd);
-    if (status == ERR) {
-      return ERR;
-    } else if (status == 0) {
-      printf("Couldn't receive message from server.\n");
-      return INVALID;
-    } else {
-      for (i = 0; i < 3; i++)
-        ext[i] = buffer[i];
-      ext[i] = '\0';
+		// Check if server sent errors
+		if (strcmp(qUserID, END_OF_FILE) == 0) {
+			printf("Question or topic does not exist\n");
+			return INVALID;
+		} else if (strcmp(qUserID, ERROR) == 0) {
+			printf("Error receiving answer from server\n");
+			return ERR;
+		} else if (isnumber(qUserID) == INVALID || strlen(qUserID) != 5) {
+			printf("Error receiving answer from server\n");
+			return INVALID;
+		}
 
-      i++;
-      for (; i < 14; i++) {
-        if (buffer[i] == ' ')
-          break;
-        sizeStr[i - 4] = buffer[i];
-      }
-      sizeStr[i - 4] = '\0';
-      i++;
-    }
-    if (isnumber(sizeStr) == INVALID || strlen(sizeStr) > 10) {
-      printf("Error receiving answer from server\n");
-      return INVALID;
-    }
-    for (j = 0; j < strlen(sizeStr); j++) {
-      isize *= 10;
-      isize += sizeStr[j] - '0';
-    }
+		// Create topic directory
+		strcpy(dirname, user->selected_topic);
+		dir = opendir(dirname);
+		if (dir == NULL) {
+			status = mkdir(dirname, 0700);
+			if (status < 0) {
+				printf("Error creating directory %s.\n", dirname);
+				return INVALID;
+			}
+		}
 
-    // Create file question.ext
-    strcpy(filename, dirname);
-    strcat(filename, "/");
-    strcat(filename, user->aux_question);
-    strcat(filename, ".");
-    strcat(filename, ext);
-    fp = fopen(filename, "w");
-    if (fp == NULL) {
-      deleteDir(dirname);
-      printf("Error creating file %s.\n", filename);
-      return INVALID;
-    }
+		i++;
+		for (; i < 16; i++) {
+			if (buffer[i] == ' ') {
+				sizeStr[i-6] = '\0';	
+				break;
+			}
+			sizeStr[i-6] = buffer[i];
+		}
+		i++;
+		if (isnumber(sizeStr) == INVALID || strlen(sizeStr) > 10) {
+			printf("Error receiving answer from server\n");
+			return INVALID;
+		}
+		for (j = 0; j < strlen(sizeStr); j++) {
+			size *= 10;
+			size += sizeStr[j] - '0';
+		}
+		
+		// Create file question.txt
+		strcpy(filename, dirname);
+		strcat(filename, "/");
+		strcat(filename, user->aux_question);
+		strcat(filename, extra);
+		strcat(filename, ".txt");
+		fp = fopen(filename, "w");
+		if (fp == NULL) {
+			deleteDir(dirname);
+			printf("Error creating file %s.\n", filename);
+			return INVALID;
+		}
 
-    printf("ISIZE1: %d.\n", isize);
-    // Start writing data in file
-    for (; i < 15; i++) {
-      if (isize == 0) {
-        buffer[i] = EOF;
-        break;
-      }
-      fputc(buffer[i], fp);
-      isize--;
-    }
-    printf("ISIZE2: %d.\n", isize);
+		// Start writing data in file
+		for (; i < 17; i++) {
+			if (size == 0) {
+				buffer[i] = EOF;
+				break;
+			}
+			fputc(buffer[i], fp);
+			size--;
+		}
+	}
 
-    // Read rest of qidata
-    while (isize >= BUFFER_SIZE) {
-      memset(buffer, 0, BUFFER_SIZE);
-      status = receiveTCP(buffer, BUFFER_SIZE, tcp_fd);
-      if (status == ERR) {
-        return ERR;
-      } else if (status == 0) {
-        printf("Couldn't receive message from server.\n");
-        return INVALID;
-      } else {
-        for (i = 0; i < BUFFER_SIZE; i++) {
-          fputc(buffer[i], fp);
-        }
-      }
-      isize -= BUFFER_SIZE;
-    }
-    if (isize > 0) {
-      memset(buffer, 0, BUFFER_SIZE);
-      status = receiveTCP(buffer, isize, tcp_fd);
-      if (status == ERR) {
-        return ERR;
-      } else if (status == 0) {
-        printf("Couldn't receive message from server.\n");
-        return INVALID;
-      } else if (isize != 0) {
-        for (i = 0; i < isize; i++) {
-          fputc(buffer[i], fp);
-        }
-      }
-    }
-    fputc(EOF, fp);
-    fclose(fp);
-  }
+	// Read rest of qdata
+	while (size >= BUFFER_SIZE) {
+		memset(buffer, 0, BUFFER_SIZE);
+		status = receiveTCP(buffer, BUFFER_SIZE, tcp_fd);
+		if (status == ERR) {
+			return ERR;
+		} else if (status == 0) {
+			printf("Couldn't receive message from server.\n");
+			return INVALID;
+		} else {
+			for (i = 0; i < BUFFER_SIZE; i++) {
+				fputc(buffer[i], fp);
+			}
+		}
+		size -= BUFFER_SIZE;
+	}
+	if (size > 0) {
+		memset(buffer, 0, BUFFER_SIZE);
+		status = receiveTCP(buffer, size, tcp_fd);
+		if (status == ERR) {
+			return ERR;
+		} else if (status == 0) {
+			printf("Couldn't receive message from server.\n");
+			return INVALID;
+		} else if (size != 0){
+			for (i = 0; i < size; i++) {
+				fputc(buffer[i], fp);
+			}
+		}
+	}
+	fputc('\0', fp);
+	fclose(fp);
 
-  return VALID;
+	// Read image flag
+	memset(buffer, 0, BUFFER_SIZE);
+	status = receiveTCP(buffer, 3, tcp_fd);
+	if (status == ERR) {
+		return ERR;
+	} else if (status == 0) {
+		printf("Couldn't receive message from server.\n");
+		return INVALID;
+	} else if (buffer[0] != ' '  || (buffer[1] != '0' && buffer[1] != '1') || buffer[2] != ' '){
+		printf("Couldn't receive message from server.\n");
+		return INVALID;
+	} else {
+		qIMG = buffer[1];
+	}
+
+	// Read qiext, qisize and qimage
+	if (qIMG == '1') {
+		memset(buffer, 0, BUFFER_SIZE);
+		status = receiveTCP(buffer, 15, tcp_fd);
+		if (status == ERR) {
+			return ERR;
+		} else if (status == 0) {
+			printf("Couldn't receive message from server.\n");
+			return INVALID;
+		} else {
+			for (i = 0; i < 3; i++)
+				ext[i] = buffer[i];
+			ext[i] = '\0';
+
+			i++;
+			for (; i < 14; i++) {
+				if (buffer[i] == ' ')
+					break;
+				sizeStr[i-4] = buffer[i];
+			}
+			sizeStr[i-4] = '\0';
+			i++;
+		}
+		if (isnumber(sizeStr) == INVALID || strlen(sizeStr) > 10) {
+			printf("Error receiving answer from server\n");
+			return INVALID;
+		}
+		for (j = 0; j < strlen(sizeStr); j++) {
+			isize *= 10;
+			isize += sizeStr[j] - '0';
+		}
+
+		// Create file question.ext
+		strcpy(filename, dirname);
+		strcat(filename, "/");
+		strcat(filename, user->aux_question);
+		strcat(filename, extra);
+		strcat(filename, ".");
+		strcat(filename, ext);
+		fp = fopen(filename, "w");
+		if (fp == NULL) {
+			deleteDir(dirname);
+			printf("Error creating file %s.\n", filename);
+			return INVALID;
+		}
+
+		// Start writing data in file
+		for (; i < 15; i++) {
+			if (isize == 0) {
+				buffer[i] = EOF;
+				break;
+			}
+			fputc(buffer[i], fp);
+			isize--;
+		}
+		
+		// Read rest of qidata
+		while (isize >= BUFFER_SIZE) {
+			memset(buffer, 0, BUFFER_SIZE);
+			status = receiveTCP(buffer, BUFFER_SIZE, tcp_fd);
+			if (status == ERR) {
+				return ERR;
+			} else if (status == 0) {
+				printf("Couldn't receive message from server.\n");
+				return INVALID;
+			} else {
+				for (i = 0; i < BUFFER_SIZE; i++) {
+					fputc(buffer[i], fp);
+				}
+			}
+			isize -= BUFFER_SIZE;
+		}
+		if (isize > 0) {
+			memset(buffer, 0, BUFFER_SIZE);
+			status = receiveTCP(buffer, isize, tcp_fd);
+			if (status == ERR) {
+				return ERR;
+			} else if (status == 0) {
+				printf("Couldn't receive message from server.\n");
+				return INVALID;
+			} else if (isize != 0){
+				for (i = 0; i < isize; i++) {
+					fputc(buffer[i], fp);
+				}
+			}
+		}
+		fputc(EOF, fp);
+		fclose(fp);
+	} 
+
+	return VALID;
 }
 
 int handleQUR(char *buffer, struct User *user, int tcp_fd) {
@@ -515,54 +604,54 @@ int handleQUR(char *buffer, struct User *user, int tcp_fd) {
   return VALID;
 }
 
-int handleANR(char *buffer, struct User *user, int tcp_fd) {
-  char *token;
-  int count = 0, status, i;
-  int size = strlen(buffer);
+int handleANR(char *buffer, struct User *user, int tcp_fd){
+	char *token;
+	int count = 0, status, i;
+	int size = strlen(buffer);
 
-  status = receiveTCP(buffer, QUR_SIZE, tcp_fd);
-  if (status == ERR) {
-    return ERR;
-    // printf("Received: '%s'\n", buffer);
-  } else if (status != 0) {
-    i = strcspn(buffer, "\n");
-    if (status != (i + 1)) {
-      printf("Error receiving message from server. New line character is "
-             "mandatory.\n");
-      return INVALID;
-    }
+	status = receiveTCP(buffer, QUR_SIZE, tcp_fd);
+	if( status == ERR){
+		return ERR;
+        //printf("Received: '%s'\n", buffer);
+    } else if( status != 0){
+		i = strcspn(buffer, "\n");
+		if (status != (i+ 1)) {
+			printf("Error receiving message from server. New line character is "
+				"mandatory.\n");
+			return INVALID;
+		}
 
-    buffer[i] = '\0';
-    token = strtok(buffer, " ");
-    count += strlen(token);
+ 		buffer[i] = '\0';
+		token = strtok(buffer, " ");
+		count += strlen(token);
 
-    if (strcmp(token, SUBMIT_ANSWER_RESPONSE) == 0) {
-      token = strtok(NULL, " ");
-      count += strlen(token);
+		if (strcmp(token, SUBMIT_ANSWER_RESPONSE) == 0){
+			token = strtok(NULL, " ");
+			count += strlen(token);
 
-      if (strcmp(token, OK) == 0) {
-        printf("Answer to question '%s' submited successfully.\n",
-               user->selected_question);
-      } else if (strcmp(token, NOK) == 0) {
-        printf("Failed to submit answer to question '%s'.\n",
-               user->selected_question);
-      } else if (strcmp(token, FULL)) {
-        printf("Couldn't submit answer. Question '%s' can't accept more "
-               "answers for now.\n",
-               user->selected_question);
-      } else {
-        printf("Error receiving answer from server.\n");
-        return ERR;
-      }
-
-      if ((size - count) > 1) {
-        printf("Error receiving answer from server.\n");
-        return INVALID;
-      }
-    } else {
-      printf("Error receiving answer from server.\n");
-      return INVALID;
-    }
-  }
-  return VALID;
+			if(strcmp(token, OK) == 0){
+				printf("Answer to question '%s' submited successfully.\n", user->selected_question);
+			}
+			else if(strcmp(token, NOK) == 0){
+				printf("Failed to submit answer to question '%s'.\n", user->selected_question);
+			}
+			else if(strcmp(token, FULL)){
+				printf("Couldn't submit answer. Question '%s' can't accept more answers for now.\n",  user->selected_question);
+			}
+			else{
+				printf("Error receiving answer from server.\n");
+				return ERR;
+			}
+			
+			if((size - count) > 1){
+				printf("Error receiving answer from server.\n");
+				return INVALID;
+			}
+		}
+		else{
+			printf("Error receiving answer from server.\n");
+			return INVALID;
+		}
+	}
+	return VALID;
 }
