@@ -4,7 +4,7 @@
 #include "../others/consts.h"
 #include "client_communication.h"
 //UDP Handlers
-void handleRGR(char *buffer, struct User *user);
+int handleRGR(char *buffer, struct User *user);
 int handleLTR(char *commandArgs[], struct User *user);
 int handlePTR(char *buffer, struct User *user, char aux_topic[]);
 int handleLQR(char *commandArgs[], struct User *user);
