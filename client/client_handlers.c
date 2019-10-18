@@ -228,15 +228,15 @@ int handleLQR(char *commandArgs[], struct User *user){
 int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 	int /*, qIMG, isize = 0*/i, status, size;
 	char command[4], qUserID[6], sizeStr[10], ext[4];
-	// char path[64], filename[128];
+	char /*path[64],*/ dirname[128], filename[128];
 	// int nread;
-	// DIR *dir;
-	// FILE *fp;
+	DIR *dir;
+	FILE *fp;
 
-	memset(buffer, 0, BUFFER_SIZE);
+	
 
 	status = receiveTCP(buffer, 21, tcp_fd);
-
+	// Read QGR, qUserID, qsize and qdata 
 	if (status == ERR) {
 		return ERR;
 	} else if (status == 0) {
@@ -245,8 +245,9 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 	} else {
 		for (i = 0; i < 3; i++)
 			command[i] = buffer[i];
+		command[i] = '\0';
 		if (strcmp(command, GET_QUESTION_RESPONSE) != 0) {
-			printf("Error receiving answer from server\n");
+			printf("Error receiving answer from server1\n");
 			return INVALID;
 		}
 		i++;
@@ -255,17 +256,29 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 				break;
 			qUserID[i-4] = buffer[i];
 		}
+		qUserID[i-4] = '\0';
 
+		// Check if server sent errors
 		if (strcmp(qUserID, END_OF_FILE) == 0) {
 			printf("Question or topic does not exist\n");
 			return INVALID;
 		} else if (strcmp(qUserID, ERROR) == 0) {
-			printf("Error receiving answer from server\n");
+			printf("Error receiving answer from server2\n");
 			return ERR;
 		} else if (isnumber(qUserID) == INVALID || strlen(qUserID) != 5) {
-			printf("Error receiving answer from server\n");
+			printf("Error receiving answer from server3\n");
 			return INVALID;
 		}
+
+		// Create topic directory
+		strcpy(dirname, user->selected_topic);
+		status = mkdir(dirname, 0700);
+		if (status < 0) {
+			printf("Error creating directory %s.\n", dirname);
+			return INVALID;
+		}
+		dir = opendir(dirname);
+
 		i++;
 		for (; i < 20; i++) {
 			if (buffer[i] == ' ') {
@@ -276,15 +289,47 @@ int handleGQR(char *buffer, struct User *user, int tcp_fd) {
 		}
 		i++;
 		if (isnumber(sizeStr) == INVALID || strlen(qUserID) > 10) {
-			printf("Error receiving answer from server\n");
+			printf("Error receiving answer from server4\n");
 			return INVALID;
 		}
 		size = atoi(sizeStr);
-		printf("COMMAND: %s; QUSERID: %s; SIZE: %d.\n", command, qUserID, size);
+		
+		// Create file question.txt
+		strcpy(filename, dirname);
+		strcat(filename, "/");
+		strcat(filename, user->aux_question);
+		strcat(filename, ".txt");
+		printf("FILENAME: %s.\n", filename);
+		fp = fopen(filename, "w");
+		if (fp == NULL) {
+			deleteDir(dirname);
+			printf("Error creating file %s.\n", filename);
+			return INVALID;
+		}
 
+		// Start writing data in file
+		for (; i < 20; i++) {
+			if (size == 0) {
+				buffer[i] == EOF;
+				break;
+			}
+			fputc(buffer[i], fp);
+			size--;
+		}
 	}
 
-
+	// Read rest of qdata
+	status = receiveTCP(buffer, size, tcp_fd);
+	if (status == ERR) {
+		return ERR;
+	} else if (status == 0) {
+		printf("Couldn't receive message from server.\n");
+		return INVALID;
+	} else if (size != 0){
+		for (i = 0; i < size; i++) {
+			fputc(buffer[i], fp);
+		}
+	}
 
 	return VALID;
 }
