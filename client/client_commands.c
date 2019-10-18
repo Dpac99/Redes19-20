@@ -88,8 +88,7 @@ void topicSelect(char *buffer, int flag, struct User *user, int numSpaces) {
           user->selected_topic = user->topics[num - 1];
           status = VALID;
         }
-      }
-      else{
+      } else {
         printf("Invalid command format.\n");
       }
     } else { // input "topic_select topic"
@@ -481,25 +480,33 @@ int answerSubmit(struct User *user, char *commandArgs[],
   return VALID;
 }
 
-//QUS qUserID topic question qsize qdata qIMG [iext isize idata]
-int sendSubmission(struct User *user, struct Submission *submission, char *buffer, int tcp_fd, int type){ //TODO: se der erro a meio, enviar ERR
+// QUS qUserID topic question qsize qdata qIMG [iext isize idata]
+int sendSubmission(struct User *user, struct Submission *submission,
+                   char *buffer, int tcp_fd,
+                   int type) { // TODO: se der erro a meio, enviar ERR
   int i = 0, c, img_size = submission->image_size;
   FILE *fp;
+  struct sigaction act1;
+  act1.sa_handler = SIG_IGN;
+  if (sigaction(SIGPIPE, &act1, NULL) == -1) {
+    printf("Error with sigaction\n");
+    exit(1);
+  }
   memset(buffer, 0, BUFFER_SIZE);
 
   if (type) {
-    sprintf(buffer, "QUS %d %s %s %ld ", user->userId, user->selected_topic, user->aux_question,
-            submission->text_size);
+    sprintf(buffer, "QUS %d %s %s %ld ", user->userId, user->selected_topic,
+            user->aux_question, submission->text_size);
   } else {
     sprintf(buffer, "ANS %d %s %s %ld ", user->userId, user->selected_topic,
             user->selected_question, submission->text_size);
   }
-  
-  if(sendTCPText(buffer, tcp_fd) == ERR) {
-     printf("Error sending msg to server.\n");
-     return ERR;
+
+  if (sendTCPText(buffer, tcp_fd) == ERR) {
+    printf("Error sending msg to server.\n");
+    return ERR;
   }
-  
+
   fp = fopen(submission->text_name, "r");
   if (fp == NULL) {
     printf("Error opening file %s.\n", submission->text_name);
@@ -518,7 +525,7 @@ int sendSubmission(struct User *user, struct Submission *submission, char *buffe
         printf("Error sending msg to server.\n");
         return ERR;
       }
-    
+
       memset(buffer, 0, BUFFER_SIZE);
       i = -1;
     }
@@ -529,65 +536,64 @@ int sendSubmission(struct User *user, struct Submission *submission, char *buffe
     printf("Error sending msg to server.\n");
     return ERR;
   }
-  
+
   memset(buffer, 0, BUFFER_SIZE);
   fclose(fp);
 
   if (!submission->imageExists) { // if there is no image
-    sprintf(buffer, " 0\n");  
-    if(sendTCPText(buffer, tcp_fd) == ERR) {
+    sprintf(buffer, " 0\n");
+    if (sendTCPText(buffer, tcp_fd) == ERR) {
       printf("Error sending msg to server.\n");
       return ERR;
     }
-    
+
   } else {
     fp = fopen(submission->image_name, "rb");
     if (fp == NULL) {
       printf("Error opening file %s.\n", submission->image_name);
       return ERR;
     }
-    sprintf(buffer, " 1 %s %ld ", submission->image_ext, submission->image_size);
-    if(sendTCPText(buffer, tcp_fd) == ERR) {
+    sprintf(buffer, " 1 %s %ld ", submission->image_ext,
+            submission->image_size);
+    if (sendTCPText(buffer, tcp_fd) == ERR) {
       printf("Error sending msg to server.\n");
       return ERR;
     }
-    
+
     i = 0;
     fseek(fp, 0, SEEK_SET);
     while (img_size > BUFFER_SIZE) {
       memset(buffer, 0, BUFFER_SIZE);
       i = fread(buffer, 1, BUFFER_SIZE, fp);
-      if((i == 0) && !feof(fp)){
+      if ((i == 0) && !feof(fp)) {
         printf("Error reading from image file1.\n");
         return ERR;
       }
-      
-      if(writeTCP(tcp_fd, buffer, i) <= 0) {
+
+      if (writeTCP(tcp_fd, buffer, i) <= 0) {
         printf("Error sending msg to server.\n");
         return ERR;
       }
       img_size -= i;
-       
     }
     memset(buffer, 0, BUFFER_SIZE);
     i = fread(buffer, 1, img_size, fp);
-    if( (i == 0) && !feof(fp)){
-        printf("Error reading from image file.\n");
-        return ERR;
+    if ((i == 0) && !feof(fp)) {
+      printf("Error reading from image file.\n");
+      return ERR;
     }
-    if(writeTCP(tcp_fd, buffer, i) <= 0){
+    if (writeTCP(tcp_fd, buffer, i) <= 0) {
       printf("Error sending msg to server.\n");
       return ERR;
     }
-    
 
     memset(buffer, 0, BUFFER_SIZE);
     sprintf(buffer, "\n");
-    if(sendTCPText(buffer, tcp_fd) == ERR){
+    if (sendTCPText(buffer, tcp_fd) == ERR) {
       printf("Error sending msg to server.\n");
       return ERR;
     }
-    
+
     fclose(fp);
   }
 

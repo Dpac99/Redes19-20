@@ -82,6 +82,12 @@
 #define INVALID				 	 	0
 #define ERR							-1
 
+#define MAX_TOPIC_LENGTH 10
+#define MAX_QUESTION_LENGTH 10
+#define MAX_SIZE_LENGTH 10
+#define EXT_LEN 3
+
+
 struct User{
 	int userId;
 	char *selected_topic;		

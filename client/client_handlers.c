@@ -577,6 +577,12 @@ int handleQUR(char *buffer, struct User *user, int tcp_fd) {
   char *token;
   int count = 0, status, i;
   int size = strlen(buffer);
+  struct sigaction act1;
+  act1.sa_handler = SIG_IGN;
+  if (sigaction(SIGPIPE, &act1, NULL) == -1) {
+    printf("Error with sigaction\n");
+    exit(1);
+  }
 
   status = receiveTCP(buffer, QUR_SIZE, tcp_fd);
   if (status == ERR) {
@@ -635,54 +641,60 @@ int handleQUR(char *buffer, struct User *user, int tcp_fd) {
   return VALID;
 }
 
-int handleANR(char *buffer, struct User *user, int tcp_fd){
-	char *token;
-	int count = 0, status, i;
-	int size = strlen(buffer);
+int handleANR(char *buffer, struct User *user, int tcp_fd) {
+  char *token;
+  int count = 0, status, i;
+  int size = strlen(buffer);
+  struct sigaction act1;
+  act1.sa_handler = SIG_IGN;
+  if (sigaction(SIGPIPE, &act1, NULL) == -1) {
+    printf("Error with sigaction\n");
+    exit(1);
+  }
 
-	status = receiveTCP(buffer, QUR_SIZE, tcp_fd);
-	if( status == ERR){
-		return ERR;
-        //printf("Received: '%s'\n", buffer);
-    } else if( status != 0){
-		i = strcspn(buffer, "\n");
-		if (status != (i+ 1)) {
-			printf("Error receiving message from server. New line character is "
-				"mandatory.\n");
-			return INVALID;
-		}
+  status = receiveTCP(buffer, QUR_SIZE, tcp_fd);
+  if (status == ERR) {
+    return ERR;
+    // printf("Received: '%s'\n", buffer);
+  } else if (status != 0) {
+    i = strcspn(buffer, "\n");
+    if (status != (i + 1)) {
+      printf("Error receiving message from server. New line character is "
+             "mandatory.\n");
+      return INVALID;
+    }
 
- 		buffer[i] = '\0';
-		token = strtok(buffer, " ");
-		count += strlen(token);
+    buffer[i] = '\0';
+    token = strtok(buffer, " ");
+    count += strlen(token);
 
-		if (strcmp(token, SUBMIT_ANSWER_RESPONSE) == 0){
-			token = strtok(NULL, " ");
-			count += strlen(token);
+    if (strcmp(token, SUBMIT_ANSWER_RESPONSE) == 0) {
+      token = strtok(NULL, " ");
+      count += strlen(token);
 
-			if(strcmp(token, OK) == 0){
-				printf("Answer to question '%s' submited successfully.\n", user->selected_question);
-			}
-			else if(strcmp(token, NOK) == 0){
-				printf("Failed to submit answer to question '%s'.\n", user->selected_question);
-			}
-			else if(strcmp(token, FULL)){
-				printf("Couldn't submit answer. Question '%s' can't accept more answers for now.\n",  user->selected_question);
-			}
-			else{
-				printf("Error receiving answer from server.\n");
-				return ERR;
-			}
-			
-			if((size - count) > 1){
-				printf("Error receiving answer from server.\n");
-				return INVALID;
-			}
-		}
-		else{
-			printf("Error receiving answer from server.\n");
-			return INVALID;
-		}
-	}
-	return VALID;
+      if (strcmp(token, OK) == 0) {
+        printf("Answer to question '%s' submited successfully.\n",
+               user->selected_question);
+      } else if (strcmp(token, NOK) == 0) {
+        printf("Failed to submit answer to question '%s'.\n",
+               user->selected_question);
+      } else if (strcmp(token, FULL)) {
+        printf("Couldn't submit answer. Question '%s' can't accept more "
+               "answers for now.\n",
+               user->selected_question);
+      } else {
+        printf("Error receiving answer from server.\n");
+        return ERR;
+      }
+
+      if ((size - count) > 1) {
+        printf("Error receiving answer from server.\n");
+        return INVALID;
+      }
+    } else {
+      printf("Error receiving answer from server.\n");
+      return INVALID;
+    }
+  }
+  return VALID;
 }

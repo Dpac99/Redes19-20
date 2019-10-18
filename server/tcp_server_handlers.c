@@ -44,16 +44,22 @@ int handleGetQuestion(int fd) {
   timeout.tv_usec = 0;
   char answers[99][64];
   int needQ = 0;
+  int max_args = MAX_TOPIC_LENGTH + MAX_QUESTION_LENGTH + 2; // space and \n
 
   sprintf(errS, "%s\n", ERROR);
 
   FD_ZERO(&mask);
   FD_SET(fd, &mask);
   memset(buffer, 0, BUFFER_SIZE);
+  struct sigaction act1;
+  act1.sa_handler = SIG_IGN;
+  if (sigaction(SIGPIPE, &act1, NULL) == -1) {
+    printf("Error with sigaction\n");
+    exit(1);
+  }
 
   // Read info from socket
-  // TODO: set max read amount
-  while (select(fd + 1, &mask, NULL, NULL, &timeout)) {
+  while (select(fd + 1, &mask, NULL, NULL, &timeout) && nread < max_args) {
     FD_ZERO(&mask);
     FD_SET(fd, &mask);
     nread += read(fd, buffer + nread, BUFFER_SIZE - nread);
@@ -602,10 +608,11 @@ int parseSubmitQuestionImage(char *buffer, char *ext, int *size) {
 
 int handleSubmitQuestion(int fd) {
   char buffer[BUFFER_SIZE];
+  struct sigaction act1;
   int uid = 0, size = 0, qimg, isize = 0;
   char topic[16], question[16], ext[4];
   char path[64], filename[128];
-  int nread, nleft, nproc, err, nprocimg, nleftimg, ndata;
+  int nread = 0, nleft, nproc, err, nprocimg, nleftimg, ndata;
   char response[16];
   DIR *dir;
   struct dirent *ent;
@@ -614,6 +621,13 @@ int handleSubmitQuestion(int fd) {
   struct timeval timeout;
   timeout.tv_sec = 0;
   timeout.tv_usec = 0;
+  int max_args = 4 + MAX_TOPIC_LENGTH + MAX_QUESTION_LENGTH + MAX_SIZE_LENGTH +
+                 USER_ID_SIZE;
+  act1.sa_handler = SIG_IGN;
+  if (sigaction(SIGPIPE, &act1, NULL) == -1) {
+    printf("Error with sigaction\n");
+    exit(1);
+  }
 
   FD_ZERO(&mask);
   FD_SET(fd, &mask);
@@ -621,8 +635,17 @@ int handleSubmitQuestion(int fd) {
   sprintf(response, "%s ", SUBMIT_QUESTION_RESPONSE);
   memset(buffer, 0, BUFFER_SIZE);
 
-  nread = read(fd, buffer,
-               39); // 4 spaces + max_topic + max_question + max_size + uid_size
+  while (nread < 39 && select(fd + 1, &mask, NULL, NULL, &timeout)) {
+    int s = read(fd, buffer + nread, max_args - nread);
+    if (s < 0) {
+      printf("ERR\n");
+      writeTCP(fd, "ERR\n", 4);
+      return -1;
+    }
+    nread += s;
+    FD_ZERO(&mask);
+    FD_SET(fd, &mask);
+  }
 
   printf("%s", buffer);
 
@@ -950,6 +973,7 @@ int handleSubmitQuestion(int fd) {
 int handleSubmitAnswer(int fd) {
   char buffer[BUFFER_SIZE];
   int uid = 0, size = 0, qimg, isize = 0;
+  struct sigaction act1;
   char topic[16], question[16], ext[4];
   char path[64], filename[128];
   int nread, nleft, nproc, err, nprocimg, nleftimg, ndata;
@@ -961,16 +985,32 @@ int handleSubmitAnswer(int fd) {
   struct timeval timeout;
   timeout.tv_sec = 0;
   timeout.tv_usec = 0;
+  act1.sa_handler = SIG_IGN;
+  if (sigaction(SIGPIPE, &act1, NULL) == -1) {
+    printf("Error with sigaction\n");
+    exit(1);
+  }
+
+  int max_args = 4 + MAX_TOPIC_LENGTH + MAX_QUESTION_LENGTH + MAX_SIZE_LENGTH +
+                 USER_ID_SIZE;
 
   FD_ZERO(&mask);
   FD_SET(fd, &mask);
 
   sprintf(response, "%s ", SUBMIT_ANSWER_RESPONSE);
+  memset(buffer, 0, BUFFER_SIZE);
 
-  nread = read(fd, buffer,
-               39); // 4 spaces + max_topic + max_question + max_size + uid_size
-
-  printf("%s", buffer);
+  while (nread < 39 && select(fd + 1, &mask, NULL, NULL, &timeout)) {
+    int s = read(fd, buffer + nread, max_args - nread);
+    if (s < 0) {
+      printf("ERR\n");
+      writeTCP(fd, "ERR\n", 4);
+      return -1;
+    }
+    nread += s;
+    FD_ZERO(&mask);
+    FD_SET(fd, &mask);
+  }
 
   nproc = parseSubmitQuestion(buffer, &uid, topic, question, &size);
   if (nproc < 0) {
