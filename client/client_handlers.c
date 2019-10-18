@@ -195,6 +195,72 @@ int handleLQR(char *commandArgs[], struct User *user){
 	return VALID;
 }
 
+// QGR qUserID qsize qdata qIMG [qiext qisize qidata]
+// N (AN aUserID asize adata aIMG [aiext aisize aidata])*
+int handleGQR(char *buffer, struct User *user, int tcp_fd) {
+	int /*, qIMG, isize = 0*/i, status, size;
+	char command[4], qUserID[6], sizeStr[10], ext[4];
+	// char path[64], filename[128];
+	// int nread;
+	// DIR *dir;
+	// FILE *fp;
+
+	memset(buffer, 0, BUFFER_SIZE);
+
+	status = receiveTCP(buffer, 21, tcp_fd);
+
+	if (status == ERR) {
+		return ERR;
+	} else if (status == 0) {
+		printf("Couldn't receive message from server.\n");
+		return INVALID;
+	} else {
+		for (i = 0; i < 3; i++)
+			command[i] = buffer[i];
+		if (strcmp(command, GET_QUESTION_RESPONSE) != 0) {
+			printf("Error receiving answer from server\n");
+			return INVALID;
+		}
+		i++;
+		for (; i < 9; i++) {
+			if (buffer[i] == '\n')
+				break;
+			qUserID[i-4] = buffer[i];
+		}
+
+		if (strcmp(qUserID, END_OF_FILE) == 0) {
+			printf("Question or topic does not exist\n");
+			return INVALID;
+		} else if (strcmp(qUserID, ERROR) == 0) {
+			printf("Error receiving answer from server\n");
+			return ERR;
+		} else if (isnumber(qUserID) == INVALID || strlen(qUserID) != 5) {
+			printf("Error receiving answer from server\n");
+			return INVALID;
+		}
+		i++;
+		for (; i < 20; i++) {
+			if (buffer[i] == ' ') {
+				sizeStr[i-10] = '\0';	
+				break;
+			}
+			sizeStr[i-10] = buffer[i];
+		}
+		i++;
+		if (isnumber(sizeStr) == INVALID || strlen(qUserID) > 10) {
+			printf("Error receiving answer from server\n");
+			return INVALID;
+		}
+		size = atoi(sizeStr);
+		printf("COMMAND: %s; QUSERID: %s; SIZE: %d.\n", command, qUserID, size);
+
+	}
+
+
+
+	return VALID;
+}
+
 int handleQUR(char *buffer, struct User *user, int tcp_fd){
 	char *token;
 	int count = 0, status, i;

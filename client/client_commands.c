@@ -226,7 +226,7 @@ int questionGet(char *buffer, int flag, struct User *user,
   memset(buffer, 0, BUFFER_SIZE);
   sprintf(buffer, "%s %s %s\n", GET_QUESTION, user->selected_topic,
           user->aux_question);
-  printf("buffer = %s", buffer);
+  // printf("buffer = %s", buffer);
 
   return VALID;
 }

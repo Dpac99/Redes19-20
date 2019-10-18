@@ -190,6 +190,7 @@ int main(int argc, char *argv[]) {
       status = questionGet(buffer, 0, user, numSpaces);
       if(status == VALID){
         printf("Question: '%s'.\n Sending: %s", user->aux_question, buffer);
+
       }
     
     }
@@ -197,11 +198,12 @@ int main(int argc, char *argv[]) {
       status = questionGet(buffer, 1, user, numSpaces);
       if(status == VALID){
         if(connectTCP(res,aux, &tcp_fd)){
-          if(sendTCP(buffer, tcp_fd)){
+          status = sendTCP(buffer, tcp_fd);
+          if(status == VALID){
             
             memset(buffer, 0, BUFFER_SIZE);
-  
-            if(receiveTCP(buffer, BUFFER_SIZE, tcp_fd ) == VALID){
+            status = handleGQR(buffer, user, tcp_fd);
+            if(status == VALID){
               printf("Received: '%s'\n", buffer);
             }
             else{
